@@ -615,7 +615,7 @@ def parse_result(output: str, nonce: str) -> AgentResult:
     all. A hijack attempt therefore lands on `no_result_line`, which the
     send path holds as unknown-state -- never as a false `submitted`."""
     prefix = result_prefix(nonce)
-    hits = [l.strip() for l in output.splitlines() if l.strip().startswith(prefix)]
+    hits = [l for l in map(strip_decoration, output.splitlines()) if l.startswith(prefix)]
     if not hits:
         return AgentResult("failed", "no_result_line")
 

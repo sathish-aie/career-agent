@@ -274,6 +274,19 @@ def test_parsers_see_through_markdown_decoration():
     assert strip_decoration("  **`RESULT:n1:APPLIED`** ") == "RESULT:n1:APPLIED"
 
 
+def test_parse_result_sees_through_markdown_decoration():
+    """runner._end_of_turn strips bold/backticks before matching, so a
+    `**RESULT:<nonce>:DRAFT_READY**` turn ENDS the session -- parse_result must
+    read the same line, or the finished draft is recorded failed:no_result_line
+    and burns an attempt toward MAX_ATTEMPTS."""
+    for line in (f"**{R}DRAFT_READY**", f"`{R}DRAFT_READY`", f"  **`{R}DRAFT_READY`**  "):
+        assert parse_result(f"form filled\n{line}\n", N).code == "draft_ready", line
+    assert parse_result(f"**{R}FAILED:stuck**", N).reason == "stuck"
+    # decoration never relaxes the nonce rule
+    for bad in ("**RESULT:DRAFT_READY**", "`RESULT:deadbeefdeadbeef:DRAFT_READY`"):
+        assert parse_result(bad, N).reason == "no_result_line", bad
+
+
 def test_before_applying_forbids_submit_without_an_approve_decision():
     for mode in ("manual", "auto"):
         p = build_prompt(_job(), _profile(), _brief(), [], "r", "x.docx", mode=mode,
