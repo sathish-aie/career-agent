@@ -1066,6 +1066,24 @@ async def test_without_a_conn_factory_the_runner_still_gets_events(conn):
     assert r["ok"] and got
 
 
+def test_the_sweep_skips_a_job_whose_checkpoint_is_still_live(conn):
+    """The RUNS registration ends in run_session's finally, a few seconds
+    BEFORE submit() records the outcome. A request's _conn() in that gap swept
+    the live draft of 2026-10-02 (49 min, mostly waiting on cards) to
+    held_unknown, and the guarded draft UPDATE then never landed. The
+    checkpoint is finished only after the outcome, so a running/waiting
+    checkpoint means this process still owns the row (startup_sweep retires
+    every orphan before the first _conn())."""
+    from career_agent.apply import checkpoint
+    conn.execute("INSERT INTO application (job_id, resume_version, status, started_at)"
+                 " VALUES (1, 'base-v1', 'in_flight', datetime('now', '-40 minutes'))")
+    conn.commit()
+    checkpoint.start(conn, 1, "sid", "nonce", "manual", False)
+    assert ats_apply.sweep_stale_in_flight(conn) == 0
+    checkpoint.finish(conn, 1)
+    assert ats_apply.sweep_stale_in_flight(conn) == 1
+
+
 def test_the_sweep_skips_a_job_whose_run_is_still_live(conn, monkeypatch):
     """The work clock pauses while a human reads a card, so a healthy run can
     outlive the 30-min window -- and web/app.py sweeps on every request."""

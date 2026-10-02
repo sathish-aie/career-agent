@@ -154,13 +154,21 @@ def sweep_stale_in_flight(conn: sqlite3.Connection, minutes: int = 30) -> int:
     ...except that the work clock pauses while the agent waits on a human
     (run_session's answer_wait_s), so a healthy run can pass this window.
     Jobs with a live run in agent.RUNS are skipped: this process is still
-    driving them, and their own watchdog resolves the row."""
+    driving them, and their own watchdog resolves the row. So are jobs whose
+    checkpoint is still running/waiting: RUNS is left in run_session's
+    finally, seconds BEFORE submit() records the outcome, and a request's
+    _conn() in that gap held a finished live draft (2026-10-02, 49 min of
+    waiting on cards). The checkpoint is finished only after the outcome, and
+    startup_sweep retires every orphaned one before the first _conn(), so a
+    live checkpoint always means this process still owns the row."""
     live = list(agent_mod.RUNS)
     cur = conn.execute(
         "UPDATE application SET status = 'held_unknown'"
         " WHERE status = 'in_flight'"
         f"  AND started_at < datetime('now', '-{int(minutes)} minutes')"
-        f"  AND job_id NOT IN ({','.join('?' * len(live))})", live)
+        f"  AND job_id NOT IN ({','.join('?' * len(live))})"
+        "  AND job_id NOT IN (SELECT job_id FROM apply_checkpoint"
+        "                     WHERE status IN ('running', 'waiting'))", live)
     conn.commit()
     return cur.rowcount
 
