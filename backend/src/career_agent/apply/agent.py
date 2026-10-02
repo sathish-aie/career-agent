@@ -40,6 +40,14 @@ WORK_DIR = Path(tempfile.gettempdir()) / "career-agent-apply"
 # They stay in the repo.
 LOG_DIR = Path("data/logs")
 
+# The operator's own Claude config stays out of the child (A2 probe,
+# docs/superpowers/verification/2026-10-02-live-apply.md): no user settings
+# (hooks, enabledPlugins), no ~/.claude/CLAUDE.md, no auto-memory. The
+# --mcp-config server and bypassPermissions are untouched by either.
+ISOLATION_FLAGS = ["--setting-sources", "project,local"]
+ISOLATION_ENV = {"CLAUDE_CODE_DISABLE_AUTO_MEMORY": "1",
+                 "CLAUDE_CODE_DISABLE_CLAUDE_MDS": "1"}
+
 
 class PreconditionError(RuntimeError):
     """A binary the run needs is missing. Distinct from a mid-run crash on
@@ -856,25 +864,27 @@ def build_cmd(model: str, mcp_path, session_id: str,
     Together with WORK_DIR being outside the repo, an injected "run
     `cat ../../.env`" has no tool to run it with and nothing to read.
 
-    NOT covered: the operator's own hooks and plugins from
-    ~/.claude/settings.json (and project/local settings) still load in this
-    session -- neither flag above ignores settings files. `--restricted` is
-    the flag that does ("ignores user, project and local settings files"),
-    but it also refuses --permission-mode bypassPermissions, which this
-    design requires, so it can't be used here. On this machine that means
-    untrusted job-posting text flows through the operator's hook chain
-    (including hooks that run PowerShell scripts) on every apply session --
-    an open residual, not something these flags close. See
-    docs/lld-apply-button-v2.md §6.
+      --setting-sources project,local
+                        drops the user settings file (hooks, enabledPlugins)
+                        -- neither flag above touches settings files, and
+                        `--restricted` (which does) refuses bypassPermissions.
+                        A project/local settings file would still load, but
+                        none exists under the child's temp cwd. ISOLATION_ENV
+                        keeps ~/.claude/CLAUDE.md and auto-memory out as well.
+                        Verified by the A2 probe of 2026-10-02 (see
+                        docs/superpowers/verification/2026-10-02-live-apply.md):
+                        no hook fired, no plugin loaded, browser_* tools still
+                        offered, OAuth still accepted. Before this, every apply
+                        session ran the operator's hook chain and the claude-mem
+                        plugin stored the full prompt and every page snapshot.
 
-    CAVEAT: --tools governs the BUILT-IN tool set only; the Playwright
-    server's browser_* tools are a separate (MCP) namespace and should be
-    unaffected. Not verified empirically -- that costs real API credits --
-    so the first live draft run must confirm browser_* tool calls still
-    appear in the transcript before this is trusted.
+    --tools governs the BUILT-IN tool set only; the Playwright server's
+    browser_* tools are a separate (MCP) namespace. Verified by the same
+    probe: the init event lists 19 mcp__playwright__ tools and no built-in
+    tool, and none of the --disallowedTools names.
     """
     return ["claude", "--model", APPLY_CLI_ALIAS.get(model, model), "-p",
-            "--mcp-config", str(mcp_path), "--strict-mcp-config",
+            "--mcp-config", str(mcp_path), "--strict-mcp-config", *ISOLATION_FLAGS,
             "--tools", "",
             "--disallowedTools", "mcp__playwright__browser_run_code_unsafe",
             "mcp__playwright__browser_evaluate",
@@ -959,6 +969,7 @@ def run_session(prompt: str, *, job_id: int, nonce: str, session_id: str, events
     env = os.environ.copy()
     env.pop("CLAUDECODE", None)
     env.pop("CLAUDE_CODE_ENTRYPOINT", None)
+    env.update(ISOLATION_ENV)
 
     run = AgentRun(build_cmd(model, mcp_path, session_id, resume=resume),
                    session_dir, env, nonce, events, popen=popen)

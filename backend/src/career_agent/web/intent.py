@@ -21,6 +21,7 @@ import sqlite3
 import subprocess
 
 from career_agent import run as run_module
+from career_agent.apply.agent import ISOLATION_ENV, ISOLATION_FLAGS
 from career_agent.web.worker import QUEUE_WHERE
 
 log = logging.getLogger(__name__)
@@ -78,7 +79,7 @@ def build_intent_cmd(schema: dict) -> list[str]:
             "--output-format", "json",
             "--json-schema", json.dumps(schema),
             "--tools", "",
-            "--strict-mcp-config"]
+            "--strict-mcp-config", *ISOLATION_FLAGS]
 
 
 def _default_runner(prompt: str, schema: dict) -> dict:
@@ -91,6 +92,7 @@ def _default_runner(prompt: str, schema: dict) -> dict:
     env = os.environ.copy()
     env.pop("CLAUDECODE", None)
     env.pop("CLAUDE_CODE_ENTRYPOINT", None)
+    env.update(ISOLATION_ENV)
     proc = subprocess.run(build_intent_cmd(schema), input=prompt,
                           capture_output=True, text=True, env=env,
                           timeout=60, check=True)

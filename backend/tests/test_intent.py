@@ -123,6 +123,8 @@ def test_build_intent_cmd_argv():
     assert "--json-schema" in argv
     schema_arg = argv[argv.index("--json-schema") + 1]
     assert json.loads(schema_arg) == intent.SCHEMA
+    # A2: no user settings (hooks, enabledPlugins) in the classifier either
+    assert argv[argv.index("--setting-sources") + 1] == "project,local"
     assert argv[argv.index("--tools") + 1] == ""
     assert "--strict-mcp-config" in argv
     assert "--permission-mode" not in argv

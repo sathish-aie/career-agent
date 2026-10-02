@@ -530,6 +530,35 @@ def test_the_spawned_session_gets_no_builtin_tools_and_no_other_mcp_config():
     assert cmd[-1] != "-"
 
 
+def test_the_spawned_session_loads_no_operator_settings():
+    """A2 (docs/superpowers/verification/2026-10-02-live-apply.md): user
+    settings carry the operator's hooks and enabledPlugins; the child gets
+    project+local only (none exist under its temp cwd). Must precede the
+    variadic --disallowedTools or its value reads as a tool name."""
+    cmd = agent_mod.build_cmd("sonnet", "C:/m.json", session_id="11111111-1111-4111-8111-111111111111")
+    assert cmd[cmd.index("--setting-sources") + 1] == "project,local"
+    assert cmd.index("--setting-sources") < cmd.index("--disallowedTools")
+
+
+def test_the_child_env_drops_claude_code_and_disables_memory_and_claude_md(monkeypatch):
+    """The two env pops were never asserted; the two new vars keep
+    ~/.claude/CLAUDE.md and auto-memory out of the session (A2 probe)."""
+    monkeypatch.setattr(agent_mod, "require_binaries", lambda: None)
+    monkeypatch.setenv("CLAUDECODE", "1")
+    monkeypatch.setenv("CLAUDE_CODE_ENTRYPOINT", "cli")
+    proc, seen = _Child(), {}
+    kill = lambda pid: proc.die()
+    monkeypatch.setattr(agent_mod, "_kill_tree", kill)
+    monkeypatch.setattr(runner_mod, "_kill_tree", kill)
+    proc.emit(_asst("m1", f"{R}APPLIED"))
+    proc.emit(_result_msg(0.01))
+    agent_mod.run_session("p", job_id=7, nonce=N, session_id="s-1", events=RunEvents(),
+                          popen=lambda cmd, **kw: (seen.update(kw["env"]), proc)[1])
+    assert "CLAUDECODE" not in seen and "CLAUDE_CODE_ENTRYPOINT" not in seen
+    assert seen["CLAUDE_CODE_DISABLE_AUTO_MEMORY"] == "1"
+    assert seen["CLAUDE_CODE_DISABLE_CLAUDE_MDS"] == "1"
+
+
 def test_build_cmd_streams_input_and_keeps_the_session():
     from career_agent.apply.agent import build_cmd
     cmd = build_cmd("sonnet", "C:/m.json", session_id="11111111-1111-4111-8111-111111111111")
