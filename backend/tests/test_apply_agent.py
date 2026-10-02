@@ -679,6 +679,21 @@ def test_a_run_session_that_forgot_to_sandbox_still_writes_only_under_tmp(tmp_pa
     assert (tmp_path / "work" / "session").is_dir()
 
 
+def test_the_mcp_server_may_upload_from_this_jobs_staging_dir(child):
+    """@playwright/mcp 0.0.80 refuses browser_file_upload for any path outside
+    its output dir or its cwd (checkFile: "outside allowed roots"). The live
+    draft of 2026-10-02 filled the whole form and then could not attach the
+    resume ats._stage_resume had put in WORK_DIR/job<id>. The output dir is
+    that staging dir -- so the agent can upload this job's resume and
+    nothing else."""
+    child.emit(_asst("m1", f"{R}APPLIED"))
+    child.emit(_result_msg(0.01))
+    _session(child)                                   # job_id=7
+    cfg = _json.loads((agent_mod.WORK_DIR / ".mcp-apply.json").read_text(encoding="utf-8"))
+    args = cfg["mcpServers"]["playwright"]["args"]
+    assert f"--output-dir={(agent_mod.WORK_DIR / 'job7').resolve()}" in args
+
+
 def test_a_result_line_ends_the_session_and_the_transcript_foots_the_cost(child):
     """Nothing else persists cost_usd/duration_ms -- there is no DB column --
     so without this footer there would be no record of what a run cost next

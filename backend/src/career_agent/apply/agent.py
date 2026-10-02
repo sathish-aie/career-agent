@@ -796,16 +796,26 @@ _USAGE_KEYS = ("input_tokens", "output_tokens",
                "cache_creation_input_tokens", "cache_read_input_tokens")
 
 
-def _mcp_config(cdp_port: int) -> dict:
+def _mcp_config(cdp_port: int, output_dir=None) -> dict:
+    """`output_dir` is the one directory besides its own cwd the server lets
+    browser_file_upload read from (playwright-core's checkFile: "outside
+    allowed roots"). run_session passes this job's staging dir, where
+    ats._stage_resume put the resume -- the live draft of 2026-10-02 filled
+    the whole form and then could not attach it. Only that dir: never the
+    unrestricted-file-access flag, which would let an injected page upload
+    any file on the host."""
+    args = ["@playwright/mcp@0.0.80",
+            f"--cdp-endpoint=http://localhost:{cdp_port}",
+            "--viewport-size=1280x800"]
+    if output_dir is not None:
+        args.append(f"--output-dir={output_dir}")
     return {"mcpServers": {"playwright": {
         "command": "npx",
         # Pinned: this server decides which tools exist and what a snapshot
         # shows (0.0.80 renders a password input's value). Re-review its core
         # tool list, its snapshot code, and build_cmd's --disallowedTools
         # whenever this pin moves.
-        "args": ["@playwright/mcp@0.0.80",
-                 f"--cdp-endpoint=http://localhost:{cdp_port}",
-                 "--viewport-size=1280x800"]}}}
+        "args": args}}}
 
 
 def require_binaries() -> None:
@@ -960,7 +970,9 @@ def run_session(prompt: str, *, job_id: int, nonce: str, session_id: str, events
     work_dir.mkdir(parents=True, exist_ok=True)
     log_dir.mkdir(parents=True, exist_ok=True)
     mcp_path = work_dir / ".mcp-apply.json"
-    mcp_path.write_text(json.dumps(_mcp_config(cdp_port)), encoding="utf-8")
+    # The same per-job dir ats._stage_resume copies the resume into.
+    mcp_path.write_text(json.dumps(_mcp_config(cdp_port, work_dir / f"job{job_id}")),
+                        encoding="utf-8")
     session_dir = work_dir / "session"
     if session_dir.exists():
         _shutil.rmtree(session_dir, ignore_errors=True)
