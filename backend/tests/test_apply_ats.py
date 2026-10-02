@@ -15,16 +15,6 @@ from career_agent.apply.agent import AgentResult
 from career_agent.config import CandidateProfile, CareerBrief
 
 
-@pytest.fixture(autouse=True)
-def work_dir(tmp_path, monkeypatch):
-    """submit() stages a clean copy of the résumé in the agent's work dir
-    before handing the path to the prompt. Keep every test's copy inside
-    its own tmp_path rather than scattering files in the real temp dir."""
-    d = tmp_path / "work"
-    monkeypatch.setattr(agent_mod, "WORK_DIR", d)
-    return d
-
-
 @pytest.fixture
 def conn(tmp_path):
     # A real file on disk, but not a readable .docx: submit() refuses when

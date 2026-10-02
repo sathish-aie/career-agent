@@ -544,21 +544,23 @@ def test_build_cmd_streams_input_and_keeps_the_session():
     assert r[r.index("--resume") + 1].startswith("11111111")
 
 
-def test_the_agent_workdir_is_outside_the_repo():
+def test_the_agent_workdir_is_outside_the_repo(scratch_dirs):
     """One relative path from backend/.env (CLAUDE_CODE_OAUTH_TOKEN,
     APIFY_TOKEN), candidate_profile.toml and career.db is not a cwd for an
-    injectable agent."""
+    injectable agent. Checked on the constant as shipped, not this test's
+    tmp redirect (conftest.scratch_dirs)."""
     repo_root = Path(agent_mod.__file__).resolve().parents[4]
     assert (repo_root / "backend" / "src").is_dir()   # the root really is the root
-    for p in (agent_mod.WORK_DIR, agent_mod.WORK_DIR / "session"):
+    work = scratch_dirs["WORK_DIR"]
+    for p in (work, work / "session"):
         assert not p.resolve().is_relative_to(repo_root), p
 
 
-def test_transcripts_stay_in_the_repos_data_logs():
+def test_transcripts_stay_in_the_repos_data_logs(scratch_dirs):
     """The audit trail: written by this process, not the agent, and
     recorded by absolute path in application.transcript_path."""
-    assert agent_mod.LOG_DIR == Path("data/logs")
-    assert not agent_mod.LOG_DIR.is_absolute()
+    assert scratch_dirs["LOG_DIR"] == Path("data/logs")
+    assert not scratch_dirs["LOG_DIR"].is_absolute()
 
 
 # -- F2/F3: run_session -- watchdog, registry, what the transcript records --
@@ -628,6 +630,24 @@ def _session(proc, timeout_s=30, events=None):
 
 def _result_msg(cost):
     return _json.dumps({"type": "result", "total_cost_usd": cost, "result": ""})
+
+
+def test_a_run_session_that_forgot_to_sandbox_still_writes_only_under_tmp(tmp_path, monkeypatch):
+    """conftest.scratch_dirs: no WORK_DIR/LOG_DIR patch here on purpose -- a
+    test that reaches the engine shell past its stub must still land in
+    tmp_path, never in backend/data/logs or the real %TEMP%/career-agent-apply
+    (how 21 job-2 transcripts got into the audit dir)."""
+    monkeypatch.setattr(agent_mod, "require_binaries", lambda: None)
+    proc = _Child()
+    kill = lambda pid: proc.die()
+    monkeypatch.setattr(agent_mod, "_kill_tree", kill)
+    monkeypatch.setattr(runner_mod, "_kill_tree", kill)
+    proc.emit(_asst("m1", f"{R}APPLIED"))
+    proc.emit(_result_msg(0.01))
+    r = _session(proc)
+    assert Path(r.transcript_path).is_relative_to(tmp_path)
+    assert (tmp_path / "work" / ".mcp-apply.json").is_file()
+    assert (tmp_path / "work" / "session").is_dir()
 
 
 def test_a_result_line_ends_the_session_and_the_transcript_foots_the_cost(child):

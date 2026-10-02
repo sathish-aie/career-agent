@@ -77,3 +77,19 @@ def _no_live_apply_agent(monkeypatch):
     yield hits
     assert not hits, (f"test reached the live apply engine: {hits} -- "
                       "stub submit() or inject run_agent")
+
+
+@pytest.fixture(autouse=True)
+def scratch_dirs(tmp_path, monkeypatch):
+    """Every path the apply engine writes outside the DB lives under this
+    test's tmp_path. backend/data/logs collected 21 fixture-job transcripts
+    from a test that leaked past its stub (LOG_DIR is cwd-relative and pytest
+    runs from backend/), and the real %TEMP%/career-agent-apply still gathered
+    staged fixture résumés. Returns the constants as shipped, for the two
+    tests that pin them."""
+    from career_agent.apply import agent, chrome
+    real = {"LOG_DIR": agent.LOG_DIR, "WORK_DIR": agent.WORK_DIR}
+    monkeypatch.setattr(agent, "LOG_DIR", tmp_path / "logs")
+    monkeypatch.setattr(agent, "WORK_DIR", tmp_path / "work")
+    monkeypatch.setattr(chrome, "PROFILE_DIR", tmp_path / "chrome-profile")
+    return real
