@@ -45,7 +45,16 @@ def chrome_command(chrome_exe: str, profile_dir: Path, port: int = 9222,
            "--noerrdialogs", "--password-store=basic",
            "--disable-save-password-bubble",
            "--deny-permission-prompts", "--use-fake-ui-for-media-stream",
-           "--use-fake-device-for-media-stream", "--disable-notifications"]
+           "--use-fake-device-for-media-stream", "--disable-notifications",
+           # Playwright's click/hover/drag wait for the target to be stable
+           # across animation frames, which Chrome throttles in a window it
+           # considers occluded or backgrounded -- the agent's window sits
+           # behind the operator's. Every click then times out "unstable"
+           # while fill and keyboard keep working (live runs, 2026-10-02).
+           # Playwright passes these itself when it launches the browser.
+           "--disable-backgrounding-occluded-windows",
+           "--disable-renderer-backgrounding",
+           "--disable-background-timer-throttling"]
     if headless:
         cmd.append("--headless=new")
     return cmd

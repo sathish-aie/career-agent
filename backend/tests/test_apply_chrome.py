@@ -21,6 +21,21 @@ def test_chrome_command_flags():
     assert "--headless=new" in chrome_command("c", Path("p"), headless=True)
 
 
+def test_chrome_keeps_rendering_while_its_window_is_covered():
+    """Playwright's click/hover/drag wait for the target to be stable across
+    animation frames, and Chrome throttles animation frames in a window it
+    considers occluded or backgrounded. The live runs of 2026-10-02 saw every
+    click time out as "unstable" on two Greenhouse forms while fill and
+    keyboard kept working, and the keyboard fallback cost $13 on one form.
+    Playwright passes these flags itself when it launches the browser; this
+    launcher must too, since the agent's window sits behind the operator's."""
+    cmd = chrome_command("C:/chrome.exe", Path("C:/prof"))
+    for flag in ("--disable-backgrounding-occluded-windows",
+                 "--disable-renderer-backgrounding",
+                 "--disable-background-timer-throttling"):
+        assert flag in cmd, flag
+
+
 def test_a_bogus_chrome_path_override_is_refused(monkeypatch, tmp_path):
     """get_chrome_path() returned $CHROME_PATH unchecked, so a typo passed
     ats.preflight() and the launch failure landed downstream as
