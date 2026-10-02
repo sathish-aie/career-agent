@@ -521,13 +521,18 @@ async def test_a_precondition_escaping_mid_run_is_not_unknown_state(conn):
 # -- the sweep/late-return double-submit race ------------------------------
 
 def _sweeping_agent(conn, result):
-    """A run that outlives sweep_stale_in_flight's window:
-    if the deadline's kill fails to land, the sweep flips the row to
-    held_unknown while the agent is still driving the browser."""
+    """A run that outlives sweep_stale_in_flight's window with no live
+    checkpoint to vouch for it (a checkpoint write that failed: _checkpoint
+    only logs): the sweep flips the row to held_unknown while the agent is
+    still driving the browser. A live checkpoint now makes the sweep skip
+    the row (test_the_sweep_skips_a_job_whose_checkpoint_is_still_live)."""
+    from career_agent.apply import checkpoint
+
     async def _fake(prompt, job_id, nonce, events, session_id=None, resume=False):
         conn.execute("UPDATE application SET started_at ="
                      " datetime('now', '-45 minutes') WHERE status = 'in_flight'")
         conn.commit()
+        checkpoint.finish(conn, job_id)
         assert ats_apply.sweep_stale_in_flight(conn) == 1
         return result
     return _fake
