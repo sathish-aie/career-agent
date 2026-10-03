@@ -9,3 +9,15 @@ provider = "greenhouse"
 token = "stripe"
 company = "Stripe"
 tier = 1
+
+[[board]]
+provider = "greenhouse"
+token = "databricks"
+company = "Databricks"
+tier = 2
+
+[[board]]
+provider = "greenhouse"
+token = "coinbase"
+company = "Coinbase"
+tier = 2

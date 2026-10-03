@@ -232,9 +232,10 @@ teaches the agent that in its own NOTES FROM THE HUMAN section.
 what an approval means: click Submit and report `APPLIED`, or stop at `DRAFT_READY`.
 `SUBMISSION_IMPLEMENTED` still **ships `False`** and gates a real send for every source.
 Everything in this section has been verified only against stubs; don't flip the switch
-or claim live behaviour until README's "Pending live checks" (real `--resume`, real
-`secret_fill`, CONFIRM flows, auto mode, a prompt-injection page, kill/timeout recovery,
-Home `apply_to`) have been run — each spends real credits, so ask first.
+or claim live behaviour until every row of README's "Pending live checks" table (L1 draft +
+CONFIRM flows, L2 kill/timeout recovery + real `--resume`, L3 Home `apply_to`, L4 real
+`secret_fill`, L5 auto mode, L6 a prompt-injection page) is marked passed in
+`docs/superpowers/verification/` — each spends real credits, so ask first.
 
 **Cards.** Humans answer cards in the job chat through `actions.answer_prompt`. It
 refuses unless the job's run is live and waiting, the card is newer than the run's

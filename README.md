@@ -143,8 +143,8 @@ Edit `career_brief.toml` (target roles, locations, salary floor, daily applicati
 
 Two commands, via the `career-agent` console script (`--help` for all flags), both run from `backend/`:
 
-- **`career-agent run`** — one-shot: discovers jobs, hard-filters, and scores them against `career_brief.toml`. Writes to `data/career.db`. This is what a scheduled task would call daily (see `scripts/install-scheduler.ps1`).
-- **`career-agent serve`** — starts the backend at [http://localhost:8000](http://localhost:8000). This serves two things at once: the `/api/*` JSON API the React portal runs on, and the original Jinja dashboard. Every Jinja page now also exists in the React portal (as a route and as a drawer beside the chat), but the Jinja pages still work. Either way, this needs to be running before the frontend has anything to show:
+- **`career-agent run`** — one-shot: discovers jobs, hard-filters, and scores them against `career_brief.toml`. Writes to `data/career.db`. This is what a scheduled task would call daily (see `backend/scripts/install-scheduler.ps1`).
+- **`career-agent serve`** — starts the backend at [http://localhost:8000](http://localhost:8000). This serves two things at once: the `/api/*` JSON API the React portal runs on, and the original Jinja dashboard. Every Jinja page now also exists as a route in the React portal, but the Jinja pages still work. Either way, this needs to be running before the frontend has anything to show:
   - **`/`** — Overview: KPIs, the discovery→apply funnel, source performance, score distribution, recent discoveries/outcomes, and a **Run Now** button that triggers the same discover+score pipeline as `career-agent run`, in the background. Run Now opens a live monitor — current stage, live counts (found/passed/scored/shortlisted), and a streaming activity feed — that you can dismiss to keep working while the run continues.
   - **`/applications`** — the live application queue: Start/Pause/Resume/Stop a worker that walks scored jobs, applying automatically (**Auto** mode) or pausing for your review before each send (**Manual** mode, the default).
   - **`/resumes`** — shows the master template's status and every tailored resume generated so far, with the verified fact each bullet was built from.
@@ -216,19 +216,29 @@ closed from outside the page, and have been accepted:
   as not submitted (it fails closed).
 - Refusing secret-shaped questions and review-card edits relies on a word list, which is
   only a backstop. The real defence is you reading each card before you answer it.
-- Operator hooks still load in the agent's session, Playwright can navigate `file://`,
+- The agent's session loads no user settings, `~/.claude/CLAUDE.md` or auto-memory
+  (`--setting-sources project,local` plus two env vars, verified 2026-10-02: before that,
+  the claude-mem plugin kept every apply prompt, profile included, and every page snapshot
+  in `~/.claude-mem/claude-mem.db`). A repo-level `.claude/settings.json` would still load,
+  and the Home-chat intent router runs from `backend/`. Playwright can navigate `file://`,
   and drafts can upload the résumé and click Save on the employer's site (see
   [LLD §6](docs/lld-apply-button-v2.md)).
 
 ### Pending live checks
 
-These have only been tested against stubs. Each needs a real run, which spends credits and
-drives a real Chrome, before it is trusted:
+Everything in the apply path was verified against stubs only. Each check below spends
+real credits and drives a real Chrome, so ask before running one. Results live in
+`docs/superpowers/verification/<date>-live-apply.md`; a check is done only when that log
+holds its evidence (transcript path, DB rows, chat state or screenshot).
 
-- a real `--resume` of an interrupted session, not just the fresh-session fallback
-- a real backend fill, submit and clear on a sign-in or sign-up page
-- the Home chat's "apply to #id" flow, from Approve card to a running job chat
-- an end-to-end draft through the chat: questions, review card, `DRAFT_READY`
+| # | Check | Status |
+|---|---|---|
+| L1 | an end-to-end manual draft from the Apply button: an ASK card answered into the same session, a chat note riding the next answer, the CONFIRM card changed once then approved, `DRAFT_READY`, nothing submitted | passed 2026-10-02 (log §2 L1 + L2): the ASK path did not arise on either form; three bugs found and fixed on the way |
+| L2 | kill/timeout recovery and a real `--resume`: backend killed on a card, the startup sweep marks the checkpoint resumable, Continue resumes the same session (not the fresh-session fallback) | passed 2026-10-03 (log §2 L2) |
+| L3 | the Home chat's "apply to #id": the Approve card starts exactly one run, a newer card supersedes an older one | passed 2026-10-02 (log §2 L3) |
+| L4 | a real backend fill, submit and clear on a sign-in or sign-up page (`secret_fill`), with the password in no transcript, message, snapshot or log | pending |
+| L5 | auto mode: a CONFIRM auto-approved through to `DRAFT_READY` | pending |
+| L6 | a prompt-injection page: a printed `RESULT:APPLIED` without the nonce is ignored | pending |
 
 ### Roadmap
 

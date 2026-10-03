@@ -152,19 +152,25 @@ its source is AGPL):
   (no Gmail MCP — email-code login flows are out of scope; the agent bails with
   `login_issue` instead).
 - Spawns:
-  `claude --model <APPLY_MODEL> -p --mcp-config <path> --strict-mcp-config --tools "" --disallowedTools mcp__playwright__browser_run_code_unsafe --permission-mode bypassPermissions --no-session-persistence --output-format stream-json --verbose -`
-  with the prompt on stdin, `CLAUDECODE`/`CLAUDE_CODE_ENTRYPOINT` scrubbed from env, cwd =
-  a per-job wiped `<system temp>/career-agent-apply/session/` dir. `--tools ""` disables
-  every built-in tool (Bash/Read/Write/WebFetch); `--strict-mcp-config` keeps the
-  operator's other MCP servers out. Both govern built-ins/MCP only — the operator's own
-  hooks/plugins from user/project/local settings still load in this session
-  (`--restricted` is the flag that ignores those files, but it refuses
-  `bypassPermissions`, which this design requires, so it's unusable here; open residual,
-  tracked in §6). The Playwright server's `browser_*` tools are a separate namespace,
-  unaffected by either flag. `--disallowedTools` blocks the one exception:
-  `browser_run_code_unsafe` runs code in Playwright's own Node process (host access, outside
-  the page sandbox) and the server has no flag to disable it; `browser_evaluate` (page
-  sandbox) stays allowed.
+  `claude --model <alias> -p --mcp-config <path> --strict-mcp-config --setting-sources project,local --tools "" --disallowedTools mcp__playwright__browser_run_code_unsafe mcp__playwright__browser_evaluate mcp__playwright__browser_network_request mcp__playwright__browser_network_requests mcp__playwright__browser_take_screenshot --permission-mode bypassPermissions --input-format stream-json --output-format stream-json --verbose --session-id <uuid>`
+  (`--resume <uuid>` on a resume; the exact list is `build_cmd` in `apply/agent.py`) with
+  the prompt as the first stream-json user message on a stdin kept open (no `-`, no
+  `--no-session-persistence`: `--resume` needs the session on disk), `CLAUDECODE`/
+  `CLAUDE_CODE_ENTRYPOINT` scrubbed from env and `CLAUDE_CODE_DISABLE_AUTO_MEMORY=1`,
+  `CLAUDE_CODE_DISABLE_CLAUDE_MDS=1` added, cwd = a per-job wiped
+  `<system temp>/career-agent-apply/session/` dir. `--tools ""` disables every built-in
+  tool (Bash/Read/Write/WebFetch); `--strict-mcp-config` keeps the operator's other MCP
+  servers out; `--setting-sources project,local` keeps the user settings file (hooks,
+  enabledPlugins) out, and the two env vars keep `~/.claude/CLAUDE.md` and auto-memory
+  out (verified by the 2026-10-02 probe: no hook fired, no plugin loaded, OAuth and
+  `bypassPermissions` still accepted; `--restricted` would also drop settings but refuses
+  `bypassPermissions`). The Playwright server's `browser_*` tools are a separate namespace,
+  unaffected by these flags (the probe's init event lists 19 of them and no built-in).
+  `--disallowedTools` blocks `browser_run_code_unsafe` (runs code in Playwright's own Node
+  process, host access, no server flag to disable it), `browser_evaluate` (could read a
+  backend-filled password's `.value` back), `browser_network_request(s)` (show the login
+  POST body) and `browser_take_screenshot` (could show a revealed password). The server
+  is pinned to `@playwright/mcp@0.0.80`.
 - Streams stdout line-by-line: `assistant` text and humanized `tool_use` lines (tool name plus its input, one line, capped at 300 chars, secret-looking fields redacted to `***` by `summarize_tool_input`) append to a
   per-job transcript `data/logs/apply_<ts>_job<id>.txt`; the final `result` message yields
   `cost_usd`. Wall-clock timeout 1200 s → process-tree kill → `AgentResult("failed", "timeout")`.
@@ -384,12 +390,20 @@ card, which pretty-prints the JSON (verify rendering in the plan; no schema chan
 
 **Known residuals (accepted risk for the P0 trial, not closed by the above):**
 
-- The operator's own hooks and plugins from `~/.claude/settings.json` (and
-  project/local settings) still load in the spawned session — `--tools ""` and
-  `--strict-mcp-config` don't touch settings files; `--restricted` does, but it refuses
-  `bypassPermissions` so it can't be used here (see §3.3). Untrusted job-posting text
-  therefore flows through the operator's hook chain, including any hooks that run
-  PowerShell scripts.
+- Until 2026-10-02 the operator's own hooks and plugins from `~/.claude/settings.json`
+  loaded in the spawned session (`--tools ""` and `--strict-mcp-config` don't touch
+  settings files): the claude-mem plugin kept every apply prompt, profile included, and
+  every page snapshot in its own database. `--setting-sources project,local` plus
+  `CLAUDE_CODE_DISABLE_AUTO_MEMORY`/`CLAUDE_CODE_DISABLE_CLAUDE_MDS` now keep the user
+  settings, `~/.claude/CLAUDE.md` and auto-memory out (see §3.3). What still loads: a
+  repo-level `.claude/settings.json` if one is ever added, and the operator's
+  `~/.claude/skills` directory (passive; no Skill tool is offered). The Home-chat intent
+  router gets the same flags but runs from `backend/`, where a project settings file
+  would apply.
+- A draft is not side-effect free: with the kill switch off the agent still uploads the
+  tailored résumé and may click Save/Next on the employer's ATS. Account creation and
+  Terms acceptance need an `approve_account` card since `bc11532` (before it, job 1639
+  registered an account unasked).
 - The Playwright MCP server can navigate to `file://` URLs and upload arbitrary
   absolute host paths, so it can reach `backend/.env` and `candidate_profile.toml`
   regardless of the `--tools` restriction. `@playwright/mcp`'s
