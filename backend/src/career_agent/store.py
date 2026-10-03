@@ -17,10 +17,16 @@ def log(conn, job_id: int | None, type_: str, payload: str | None = None) -> Non
     conn.commit()
 
 
-def submitted_today(conn) -> int:
-    """What brief.daily_cap counts: rows submitted on today's UTC date."""
-    return conn.execute("SELECT COUNT(*) n FROM application WHERE status = 'submitted'"
-                        " AND date(submitted_at) = date('now')").fetchone()["n"]
+def submitted_today(conn, *, held: bool = False) -> int:
+    """What brief.daily_cap counts: rows submitted on today's UTC date. `held`
+    also counts today's held_unknown rows, each possibly a real send; ats.submit
+    passes it, worker.guard does not, so a hold never pauses the draft-only worker."""
+    n = conn.execute("SELECT COUNT(*) n FROM application WHERE status = 'submitted'"
+                     " AND date(submitted_at) = date('now')").fetchone()["n"]
+    if held:
+        n += conn.execute("SELECT COUNT(*) n FROM application WHERE status = 'held_unknown'"
+                          " AND date(started_at) = date('now')").fetchone()["n"]
+    return n
 
 
 def upsert_jobs(conn, jobs: list[Job], brief: CareerBrief) -> int:

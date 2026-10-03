@@ -245,7 +245,8 @@ closed from outside the page, and have been accepted:
   Playwright but has not been run live. If it fails, every embedded-form submit is held.
 - A job-description tab on the form's own host that happens to say "thank you for
   applying" and shows at most two inputs could pass the check falsely.
-- A held submission does not count toward the daily cap.
+- A held submission counts toward the daily cap for Apply until you resolve it, since it
+  may be a real send. The queue worker only drafts, so a hold never pauses it.
 
 ### Pending live checks
 

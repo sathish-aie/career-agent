@@ -174,6 +174,22 @@ async def test_only_an_apply_click_lets_a_run_submit(conn, monkeypatch, allowed)
     assert checkpoint.get(conn, 1)["can_submit"] == int(allowed)
 
 
+
+@pytest.mark.parametrize("allowed", [True, False])
+async def test_the_confirm_card_carries_the_runs_own_permission(conn, monkeypatch, factory, allowed):
+    """The review card is what authorises a send, so it must say what Approve
+    does from its own payload: the job page's checkpoint is fetched once and
+    can predate the run. The agent's JSON cannot claim it either way."""
+    async def fake(prompt, jid, nonce, events, session_id=None, resume=False, **kw):
+        events.on_confirm(dict(_confirm(Name="Asha"), can_submit=not allowed))
+        return AgentResult("draft_ready")
+    monkeypatch.setattr(ats_apply, "_live_run_agent", fake)
+    monkeypatch.setattr(ats_apply, "preflight", lambda: None)
+    await _submit(conn, mode="manual", submit_allowed=allowed, conn_factory=factory)
+    row = conn.execute("SELECT payload FROM agent_prompt WHERE kind = 'confirm'").fetchone()
+    assert json.loads(row["payload"])["can_submit"] is allowed
+
+
 async def test_draft_needs_answer_passthrough(conn):
     fake = fake_agent(AgentResult("needs_answer", "Do you have a PMP?"))
     r = await _submit(conn, mode="manual", run_agent=fake)
@@ -892,6 +908,28 @@ async def test_the_daily_cap_is_rechecked_inside_the_lock(conn):
     assert len(ran) == 1 and sorted([a["ok"], b["ok"]]) == [False, True]
     assert "Daily cap of 1" in (b if a["ok"] else a)["reason"]
     assert [r["status"] for r in conn.execute("SELECT status FROM application")] == ["submitted"]
+
+
+
+@pytest.mark.parametrize("may_send,refused", [(True, True), (False, False)])
+async def test_a_held_send_today_counts_toward_the_cap(conn, monkeypatch, may_send, refused):
+    """A hold may be a real application (a confirmation worded outside
+    MARKERS): it uses up the cap until a human resolves it. A draft-only run
+    sends nothing, so the cap never stops it."""
+    job2 = _second_job(conn)
+    conn.execute("INSERT INTO application (job_id, resume_version, status, failure_reason,"
+                 " started_at) VALUES (?, 'base-v1', 'held_unknown', 'submit_unconfirmed',"
+                 " datetime('now'))", (job2,))
+    conn.commit()
+    capped = CareerBrief(target_titles=["AI Engineer"], search_locations=["Chennai"],
+                         daily_cap=1)
+    if may_send:
+        kw = {"run_agent": fake_agent(AgentResult("draft_ready"))}
+    else:
+        _use_live_fake(monkeypatch, AgentResult("draft_ready"))
+        kw = {}
+    r = await ats_apply.submit(conn, 1, mode="manual", brief=capped, profile=PROFILE, **kw)
+    assert (r.get("reason") == "Daily cap of 1 reached.") is refused
 
 
 def test_the_agent_deadline_fires_before_the_sweep_window():

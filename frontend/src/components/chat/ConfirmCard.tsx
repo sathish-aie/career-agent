@@ -18,10 +18,12 @@ export function ConfirmCard({ prompt, onAnswered, mode: runMode, canSubmit }: {
   onAnswered: () => void
   /** The run's mode (manual/auto), shown as the header badge. */
   mode?: string | null
-  /** This run's apply_checkpoint.can_submit: true means approving submits. */
+  /** Fallback for a card without its own can_submit: the job's checkpoint. */
   canSubmit?: boolean
 }) {
   const p = prompt.payload as unknown as ConfirmPayload
+  // The card's own stamp wins: the job page's checkpoint can predate this run.
+  const submits = p.can_submit ?? !!canSubmit
   const { busy, error, send } = useAnswer(prompt.id, onAnswered)
   const [mode, setMode] = useState<'view' | 'edit' | 'cancel'>('view')
   // Edits keyed by row index; `changes` keeps only trimmed values that differ.
@@ -48,7 +50,7 @@ export function ConfirmCard({ prompt, onAnswered, mode: runMode, canSubmit }: {
         </span>
         <span className="ccard__head-r">
           {runMode && <span className="mono ccard__mode">{runMode}</span>}
-          {canSubmit ? (
+          {submits ? (
             <span className="b am">
               <Icon d={P.alert} size={11} />
               Approving submits the application
@@ -117,7 +119,7 @@ export function ConfirmCard({ prompt, onAnswered, mode: runMode, canSubmit }: {
           <div className="ccard__actions">
             <button className="btn pri" disabled={busy}
                     onClick={() => send({ decision: 'approve' })}>
-              {canSubmit ? 'Approve and submit' : 'Approve'}
+              {submits ? 'Approve and submit' : 'Approve'}
             </button>
             <button className="btn" disabled={busy}
                     onClick={() => setMode('edit')}>Change an answer</button>

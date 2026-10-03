@@ -191,6 +191,9 @@ export interface ConfirmPayload {
   account_actions: string[]
   memory_used: string[]
   notes: string
+  /** Stamped by the backend from this run's own permission: true means
+   * approving submits. Missing on cards created before it existed. */
+  can_submit?: boolean
 }
 
 /** Body is the bare dict -- api_answer_prompt reads the whole JSON body:

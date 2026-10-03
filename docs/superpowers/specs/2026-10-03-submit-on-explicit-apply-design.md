@@ -74,7 +74,9 @@ checks pass. The user decided to enable submission anyway; L4–L6 remain unrun.
 - The confirmation markers are fixed English phrases. An ATS worded otherwise holds a
   real submission as `submit_unconfirmed` until the user adjudicates it with
   **It was submitted**; add the wording to the markers when it is seen.
-- A `held_unknown` / `submit_unconfirmed` row does not count toward the daily cap.
+- A `held_unknown` row started today counts toward the daily cap in `submit()`'s in-lock
+  check (it may be a real send), but not in `worker.guard`, so it never pauses the
+  draft-only worker. (Changed after the branch review; first written as not counting.)
 - A job-description tab on the form's host whose text matches a marker and that shows two
   or fewer visible controls could verify falsely.
 - Not yet proven live: reading text inside a cross-origin embedded form over CDP, the

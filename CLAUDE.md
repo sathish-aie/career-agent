@@ -242,7 +242,11 @@ user's decision
 ([design](docs/superpowers/specs/2026-10-03-submit-on-explicit-apply-design.md));
 setting it back to `False` makes every run draft. A submitting run is always manual:
 Apply, the agent fills, the review card, and the human's **Approve and submit**.
-`submit()` re-checks the daily cap inside `_agent_lock` (`store.submitted_today`), since
+The CONFIRM card's payload carries the run's own `can_submit` (stamped by `_chat_events`,
+overriding the agent's JSON), and ConfirmCard's badge and **Approve and submit** button
+read it, since the job page's checkpoint can predate the run. `submit()` re-checks the
+daily cap inside `_agent_lock` (`store.submitted_today(held=True)`, which also counts
+today's `held_unknown` rows as possible sends), since
 two Apply clicks both pass `worker.guard` first. L1–L3 of README's "Pending live checks"
 passed live as drafts only; no live submit, L4 (`secret_fill`), L5 (auto mode) or L6
 (a prompt-injection page) has run. Each spends real credits, so ask first, and the first

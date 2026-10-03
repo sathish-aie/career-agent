@@ -270,7 +270,7 @@ def _real_page_urls() -> list[str]:
 
 
 def _chat_events(conn_factory, job_id: int, nonce: str, mode: str = "manual",
-                 prompt_baseline: int = 0) -> RunEvents:
+                 prompt_baseline: int = 0, can_submit: bool = False) -> RunEvents:
     """RunEvents that narrate a run into the job's conversation, or no-ops
     when there is no conn_factory.
 
@@ -363,7 +363,9 @@ def _chat_events(conn_factory, job_id: int, nonce: str, mode: str = "manual",
         heard.set()
 
         def record(c):
-            pid = chat.open_prompt(c, job_id, "confirm", payload)
+            # The card says what Approve does from its own payload (the job
+            # page's checkpoint can predate this run); the agent can't claim it.
+            pid = chat.open_prompt(c, job_id, "confirm", dict(payload, can_submit=can_submit))
             _checkpoint(checkpoint.mark_waiting, c, job_id, pid)
             if mode != "auto" or chat.answer_prompt_row(c, pid, {"decision": "approve"}) is None:
                 return None
@@ -903,14 +905,15 @@ async def submit(conn: sqlite3.Connection, job_id: int, mode: str,
             # failure, or a session that stopped resumable): never a second one.
             return {"ok": False, "reason": f"job {job_id} was started by another request meanwhile"}
         # Authoritative, like the BLOCKING re-check above: two Apply clicks both
-        # pass worker.guard's cap check before either takes this lock.
-        if can_submit and store.submitted_today(conn) >= brief.daily_cap:
+        # pass worker.guard's cap check before either takes this lock. A hold
+        # counts here: it may be a real send whose confirmation wasn't recognised.
+        if can_submit and store.submitted_today(conn, held=True) >= brief.daily_cap:
             return {"ok": False, "reason": f"Daily cap of {brief.daily_cap} reached."}
         # A crashed run's cards can never be answered; this run's cards are
         # the ones created after `baseline` (the answer API refuses older).
         chat.expire_open_prompts(conn, job_id)
         baseline = conn.execute("SELECT COALESCE(MAX(id), 0) m FROM agent_prompt").fetchone()["m"]
-        events = _chat_events(conn_factory, job_id, nonce, mode, baseline)
+        events = _chat_events(conn_factory, job_id, nonce, mode, baseline, can_submit)
         cur = conn.execute(
             "INSERT INTO application (job_id, resume_version, status, started_at)"
             " VALUES (?, ?, 'in_flight', datetime('now'))",
@@ -934,7 +937,7 @@ async def submit(conn: sqlite3.Connection, job_id: int, mode: str,
                 session_id, nonce = str(uuid.uuid4()), agent_mod.new_nonce()
                 _checkpoint(checkpoint.restart, conn, job_id, session_id, nonce)
                 _say(conn, job_id, "Could not resume the session; starting a fresh one with your answers")
-                events = _chat_events(conn_factory, job_id, nonce, mode, baseline)
+                events = _chat_events(conn_factory, job_id, nonce, mode, baseline, can_submit)
                 prompt = agent_mod.build_prompt(*prompt_args, mode=mode, can_submit=can_submit,
                                                 nonce=nonce, pinned_answers=pinned, score=score,
                                                 logins=credentials.list_(conn))
