@@ -176,3 +176,8 @@ Apply button and Continue of such a run can send, after the human's approve, and
 ([design](../specs/2026-10-03-submit-on-explicit-apply-design.md)). The worker, Track
 anyway and Home's card stay draft-only. L4–L6 are still not run, and no live submit has
 run: the first one is a real application.
+
+**Addendum 2, 2026-10-03.** Databricks #2046 has a Skip verdict, so the UI starts it
+through "Track anyway" (the override route), which was draft-only; it is now "Apply
+anyway" and may submit, like Apply. The Home card, the worker and auto-resume stay
+draft-only. The #2046 run in section 2 above predates both changes and could only draft.

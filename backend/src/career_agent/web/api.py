@@ -180,7 +180,7 @@ async def api_override(job_id: int):
     result = await actions.do_apply(
         m._conn(), job_id, allow_skip=True, event="human_override",
         brief_path=m.BRIEF_PATH, candidate_profile_path=m.CANDIDATE_PROFILE_PATH,
-        conn_factory=m._chat_conn)
+        conn_factory=m._chat_conn, submit_allowed=True)   # Apply anyway: an explicit click, may send
     return _result(result)
 
 

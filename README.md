@@ -67,10 +67,11 @@ Every submission carries an explainable decision record: why it qualified, what 
 
 > **It submits only what you start with Apply, after you approve it.** Since 2026-10-03
 > `SUBMISSION_IMPLEMENTED` in `career_agent/apply/ats.py` is `True`, but a run may send
-> only when you start it with a job's **Apply** button, or **Continue** such a run. The
+> only when you start it with a job's **Apply** button (**Apply anyway** on a job the
+> gate skipped), or **Continue** such a run. The
 > agent fills the form and shows the review card, and clicks Submit only on your
 > **Approve and submit**. The application is recorded as submitted only after the backend
-> sees the employer's confirmation page itself. The queue worker, **Track anyway** and the
+> sees the employer's confirmation page itself. The queue worker and the
 > Home chat's "apply to #id" stay draft-only (see "Real application submission (v3)"
 > below). This is a deliberate departure from the phase gate in the table below, which
 > called for outcome data proving tailored applications convert before auto-submission
@@ -167,8 +168,8 @@ Open [http://localhost:5173](http://localhost:5173). It proxies `/api/*` and fil
 
 `career_agent/apply/ats.py` drives a real agentic apply engine — one Claude Code session
 per job, filling the form in a real Chrome over CDP. Since 2026-10-03
-`SUBMISSION_IMPLEMENTED` is `True`, and only a job's **Apply** button (and **Continue** of
-such a run) can send. See the
+`SUBMISSION_IMPLEMENTED` is `True`, and only a job's **Apply** button (**Apply anyway**
+on a gate-skipped job) and **Continue** of such a run can send. See the
 [submit-on-explicit-Apply design](docs/superpowers/specs/2026-10-03-submit-on-explicit-apply-design.md).
 
 Setup:
@@ -183,11 +184,11 @@ Setup:
 3. Set `CREDENTIAL_KEY` in `.env` (see First-time setup). The agent needs it whenever a
    site requires an account.
 4. With Chrome fully closed, rehearse on a few real postings first with the Home chat's
-   "apply to #id" (or **Track anyway** on a skipped job). Those runs are draft-only: the
+   "apply to #id". That run is draft-only: the
    real agent fills the form and shows the review card with exactly what it would send,
    then stops at a draft. The first run clones your existing Chrome profile (cookies,
    sessions) into an isolated worker profile, which needs Chrome not running.
-5. **Apply is real.** On a run started with a job's Apply, the review card says
+5. **Apply is real.** On a run started with a job's Apply or Apply anyway, the review card says
    "Approving submits the application" and its button reads **Approve and submit**.
    Approving makes the agent click the form's final submit control once. The backend
    then reads the employer's page itself, and only a confirmation page on the form's own

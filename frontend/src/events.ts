@@ -16,7 +16,7 @@ const EVENTS: Record<string, [label: string, tone: Tone, icon: string]> = {
   needs_answer: ['Asked you a question', 'am', P.chat],
   needs_answer_resolved: ['You answered', 'sl', P.user],
   human_applied: ['You started applying', 'sl', P.user],
-  human_override: ['You tracked a skipped job', 'sl', P.user],
+  human_override: ['You applied to a skipped job anyway', 'sl', P.user],
   human_dismissed: ['You dismissed a job', 'sl', P.user],
   human_marked_applied: ['You marked it applied', 'sl', P.user],
   human_restored: ['You put a job back in the queue', 'sl', P.user],

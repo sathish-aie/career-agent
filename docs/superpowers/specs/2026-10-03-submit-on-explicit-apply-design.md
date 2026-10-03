@@ -31,10 +31,12 @@ checks pass. The user decided to enable submission anyway; L4–L6 remain unrun.
   every field → the human's **Approve** makes the agent click Submit. Apply runs stay in
   manual mode.
 - **Who may submit:** the job's Apply button (`POST /api/apply/{id}` and the legacy
-  Jinja `POST /apply/{id}`), and Continue of a run that Apply started. Continue inherits
+  Jinja `POST /apply/{id}`), "Apply anyway" on a gate-skipped job (`POST /api/override/{id}`
+  and `POST /override/{id}`; first written as the draft-only "Track anyway", see the
+  revision at the end), and Continue of a run one of them started. Continue inherits
   that run's permission and never upgrades a draft-only run.
-- **Draft-only:** "Track anyway" (`/api/override`, `/override`), the Home "apply to #id"
-  card, the queue worker (Start/Resume, Auto and Manual) and auto-resume.
+- **Draft-only:** the Home "apply to #id" card, the queue worker (Start/Resume, Auto and
+  Manual) and auto-resume.
 
 ## Design
 
@@ -82,5 +84,15 @@ checks pass. The user decided to enable submission anyway; L4–L6 remain unrun.
 - Not yet proven live: reading text inside a cross-origin embedded form over CDP, the
   confirmation tab surviving the agent's MCP shutdown, and a second CDP client at CONFIRM
   time not disturbing the agent.
-- The first live Apply is a real application. "Track anyway" and the Home card remain
-  draft-only paths for rehearsal.
+- The first live Apply is a real application. The Home card remains a draft-only path
+  for rehearsal.
+
+## Revision (2026-10-03, later): Apply anyway may submit
+
+A gate-skipped job (Databricks #2046, scored 65/100) can only be started through the
+override route, which the first version left draft-only, so such a job could never submit.
+The user chose to let that explicit click submit too, renamed "Apply anyway" in the UI.
+Everything else is unchanged: the review card and its Approve, the backend's check of the
+confirmation page, the holds, and the daily cap. The Home card, the queue worker and
+auto-resume stay draft-only, because an unattended or LLM-routed path is never
+submit-capable. A broader "submit by default everywhere" was considered and declined.

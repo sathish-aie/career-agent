@@ -1597,7 +1597,7 @@ def test_the_skipped_tab_offers_outcome_controls_for_an_applied_job(client):
 def test_the_skipped_tab_offers_mark_applied_and_keeps_track_anyway(client):
     skipped = client.get("/applications").text.split('id="tab-skipped"')[1]
     assert 'hx-post="/applied/2"' in skipped
-    assert "Track anyway" in skipped
+    assert "Apply anyway" in skipped
 
 
 def _all_tab(text):
@@ -1694,7 +1694,7 @@ def test_transcript_route_404s_outside_log_dir_or_missing(client, tmp_path, monk
 
 
 def test_the_skipped_tab_does_not_gain_a_duplicate_apply_button(client):
-    """Track anyway already posts to /override there; the new button lives
+    """Apply anyway already posts to /override there; the new button lives
     in the All tab's caller() block, not in the shared macro."""
     skipped = client.get("/applications").text.split('id="tab-skipped"')[1]
     assert skipped.count('hx-post="/override/2"') == 1
@@ -2140,10 +2140,11 @@ def test_agent_routes_hand_a_chat_conn_factory_down(client, monkeypatch, path, k
     assert captured.get("conn_factory") is web._chat_conn
 
 
-@pytest.mark.parametrize("path,allowed", [("/apply/1", True), ("/api/apply/1", True),
-                                          ("/override/1", False), ("/api/override/1", False)])
-def test_only_the_apply_button_may_submit(client, monkeypatch, path, allowed):
-    """'Track anyway' / override stays draft-only (user decision 2026-10-03)."""
+@pytest.mark.parametrize("path", ["/apply/1", "/api/apply/1", "/override/1", "/api/override/1"])
+def test_an_apply_or_apply_anyway_click_may_submit(client, monkeypatch, path):
+    """Both explicit clicks on a job may send: Apply, and Apply anyway for a
+    skip verdict (user decision 2026-10-03). Home's card and the worker still
+    draft: test_api_chat and test_worker pin those."""
     seen = []
 
     async def fake_submit(conn, job_id, mode, **kw):
@@ -2157,7 +2158,7 @@ def test_only_the_apply_button_may_submit(client, monkeypatch, path, allowed):
     conn.commit()
     worker.set_run_state(conn, "apply", status="paused", mode="manual", current_job_id=1)
     client.post(path)
-    assert seen == [(1, "manual", allowed)]
+    assert seen == [(1, "manual", True)]
 
 
 def test_run_status_context_exposes_the_open_prompt_and_conversation(client):

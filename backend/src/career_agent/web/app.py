@@ -200,7 +200,7 @@ async def override(job_id: int):
     return _span(await actions.do_apply(
         conn, job_id, allow_skip=True, event="human_override",
         brief_path=BRIEF_PATH, candidate_profile_path=CANDIDATE_PROFILE_PATH,
-        conn_factory=_chat_conn))
+        conn_factory=_chat_conn, submit_allowed=True))   # Apply anyway: an explicit click, may send
 
 
 @app.post("/answer/{job_id}", response_class=HTMLResponse)

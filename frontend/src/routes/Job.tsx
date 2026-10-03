@@ -146,7 +146,7 @@ function HubHeader({ d, state, actions, setForm, askClearHold }: Omit<HubContext
   if (row && state && !hard) {
     switch (state) {
       case 'queued':
-        main = primary(row.verdict === 'skip' ? 'Track anyway' : 'Apply', () => actions.startRun(applyPath(row)), P.play)
+        main = primary(row.verdict === 'skip' ? 'Apply anyway' : 'Apply', () => actions.startRun(applyPath(row)), P.play)
         if (row.verdict !== 'skip') {
           items = [
             { label: 'Move up', icon: P.up,
@@ -163,7 +163,7 @@ function HubHeader({ d, state, actions, setForm, askClearHold }: Omit<HubContext
       case 'drafted':
         main = primary('Open draft', () => actions.openChat())
         items = [
-          { label: row.verdict === 'skip' ? 'Redo draft' : 'Apply again', icon: P.undo,
+          { label: 'Apply again', icon: P.undo,
             onSelect: () => actions.startRun(applyPath(row)) },
           markApplied, 'sep', dismiss,
         ]

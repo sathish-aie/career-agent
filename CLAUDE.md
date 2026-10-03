@@ -234,9 +234,11 @@ teaches the agent that in its own NOTES FROM THE HUMAN section.
 `(SUBMISSION_IMPLEMENTED and allowed) or run_agent is not None`, where `allowed` is
 `submit()`'s keyword-only `submit_allowed` and, on a resume, also the checkpoint's own
 `can_submit` bit, so a Continue never escalates a draft-only run. Only the job's Apply
-button (`api.api_apply`, `app.apply`) and Continue (`actions._resume_run`) pass
-`submit_allowed`. The worker (Start/Resume in either mode, and auto-resume), Track anyway
-and Home's `apply_to` card always draft, and no production caller injects `run_agent`
+and Apply anyway buttons (`api.api_apply`, `api.api_override`, `app.apply`,
+`app.override`; Apply anyway is how a gate-skipped job starts) and Continue
+(`actions._resume_run`) pass `submit_allowed`. The worker (Start/Resume in either mode,
+and auto-resume) and Home's `apply_to` card always draft, and no production caller
+injects `run_agent`
 (a test pins both). `SUBMISSION_IMPLEMENTED` is **`True` since 2026-10-03**, by the
 user's decision
 ([design](docs/superpowers/specs/2026-10-03-submit-on-explicit-apply-design.md));

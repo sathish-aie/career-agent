@@ -150,7 +150,7 @@
         {# /apply refuses a skip verdict, and this tab lists skip rows #}
         {# when the page is loaded as ?show=skipped. #}
         <button class="btn" hx-post="{{ '/override/' ~ j['id'] if j['verdict'] == 'skip' else '/apply/' ~ j['id'] }}"
-                title="{{ 'Track this skipped job: the agent fills the form as a draft only.' if j['verdict'] == 'skip' else "Apply now: the agent fills the form; approving its summary in the job's chat submits it." }}">Apply</button>
+                title="{{ 'Apply anyway: overrides the gate skip. The agent fills the form; approving its summary in the job chat submits it.' if j['verdict'] == 'skip' else "Apply now: the agent fills the form; approving its summary in the job's chat submits it." }}">Apply</button>
         {% endif %}
         <button hx-post="/dismiss/{{ j['id'] }}" hx-swap="outerHTML">Dismiss</button>
         {% endcall %}
@@ -176,7 +176,7 @@
       <td>
         {% call action_cell(j) %}
         <button hx-post="/override/{{ j['id'] }}" hx-swap="outerHTML"
-                title="Records an override of the gate's skip and tracks it. Draft only &mdash; never submitted.">Track anyway</button>
+                title="Records an override of the gate's skip and applies. The agent fills the form; approving its summary in the job chat submits it.">Apply anyway</button>
         {% endcall %}
       </td>
     </tr>

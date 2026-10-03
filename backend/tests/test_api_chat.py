@@ -946,9 +946,10 @@ def test_approving_an_account_through_the_route_fills_off_the_event_loop(client,
 
 # -- final review ----------------------------------------------------------------
 
-async def test_only_the_apply_button_passes_submit_permission(db_path, runs, monkeypatch, tmp_path):
-    """Home's 'apply to #id' card is LLM-routed, not the job's Apply button:
-    draft-only, like any do_apply that does not ask. (Continue: see above.)"""
+async def test_home_card_and_a_bare_do_apply_stay_draft_only(db_path, runs, monkeypatch, tmp_path):
+    """Home's 'apply to #id' card is LLM-routed, not a click on the job: draft-only,
+    like any do_apply that does not ask. Only a caller passing submit_allowed (the
+    Apply and Apply-anyway routes) may send. (Continue: see above.)"""
     c = db.connect(db_path)
     seen = []
     monkeypatch.setattr(actions.worker, "tailor_for_apply", lambda *a, **kw: _async("base-v1"))

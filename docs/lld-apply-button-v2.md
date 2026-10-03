@@ -270,7 +270,7 @@ gap — a draft review can take hours).
 >   the job chat. `"auto"`: the CONFIRM is approved on the spot.
 > - **`can_submit` decides what an approval means.** Since 2026-10-03 it is per run:
 >   `(SUBMISSION_IMPLEMENTED and allowed) or run_agent is not None`, where `allowed` is the
->   keyword-only `submit_allowed` (only the Apply button and Continue pass it) and, on a
+>   keyword-only `submit_allowed` (only the Apply and Apply-anyway buttons and Continue pass it) and, on a
 >   resume, also the checkpoint's own `can_submit` bit. It either clicks Submit
 >   (`APPLIED`, recorded `submitted` only once `apply/confirmation.py` has read the
 >   employer's confirmation page over CDP) or stops at `DRAFT_READY`. After an approve,
@@ -387,8 +387,8 @@ card, which pretty-prints the JSON (verify rendering in the plan; no schema chan
 
 1. **Kill switch and per-run permission** — `SUBMISSION_IMPLEMENTED` (`True` since
    2026-10-03; `False` makes every run draft) and `submit()`'s keyword-only
-   `submit_allowed`, which only the job's Apply button and Continue pass. The worker,
-   Track anyway and Home's `apply_to` card always draft, and a Continue never escalates.
+   `submit_allowed`, which only the job's Apply and Apply-anyway buttons and Continue pass.
+   The worker and Home's `apply_to` card always draft, and a Continue never escalates.
 2. **State machine** — draft-before-send in manual mode, `one_live_application_per_job`,
    `sweep_stale_in_flight` (an agent crash mid-send leaves `held_unknown`, blocking a
    double-send, exactly as today), daily cap, pause.

@@ -97,7 +97,7 @@ function Primary({ job, state, row, env }: { job: Job; state: State; row: JobAct
       return btn('Open draft', row.openChat)
     case 'queued':
       return job.verdict === 'skip'
-        ? btn('Track anyway', () => row.startRun(applyPath(job)))
+        ? btn('Apply anyway', () => row.startRun(applyPath(job)))
         : btn('Apply', () => row.startRun(applyPath(job)))
   }
 }
@@ -192,7 +192,7 @@ function AppRow({ job, env, tab, expanded, onToggle, edge }: {
     ]
   } else if (state === 'drafted') {
     items = [
-      { label: job.verdict === 'skip' ? 'Redo draft' : 'Apply again', icon: P.undo,
+      { label: 'Apply again', icon: P.undo,
         onSelect: () => row.startRun(applyPath(job)) },
       ...(tab === 'all' ? [markApplied, 'sep' as const, dismiss] : []),
     ]

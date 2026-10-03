@@ -31,7 +31,7 @@ export function useJobActions(jobId: number, reload: () => void) {
       return r
     })
 
-  /** Apply, Redo draft, Track anyway: start the agent, then open its chat. */
+  /** Apply, Apply again, Apply anyway: start the agent, then open its chat. */
   const startRun = async (path: string) => {
     setStarting(true)
     setStartError(null)

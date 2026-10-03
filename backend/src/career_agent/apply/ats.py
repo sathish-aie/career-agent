@@ -38,11 +38,11 @@ BLOCKING = ("in_flight", "submitted", "held_unknown", "failed_permanent")
 PENDING: set[int] = set()
 
 # The global master switch. On, a run MAY submit -- only one whose caller
-# passes submit_allowed: the job's Apply button (api.api_apply, app.apply) and
-# a Continue of a session Apply started (apply_checkpoint.can_submit is the
-# per-run bit; a resume never escalates). The worker (Start/Resume,
-# auto-resume), Track anyway and Home's "apply to" card always draft. Off,
-# every run drafts. Turned on by the user's decision of 2026-10-03, see
+# passes submit_allowed: the job's Apply and Apply-anyway buttons (api_apply,
+# api_override, app.apply, app.override) and a Continue of a session one of
+# them started (apply_checkpoint.can_submit is the per-run bit; a resume never
+# escalates). The worker (Start/Resume, auto-resume) and Home's "apply to"
+# card always draft. Off, every run drafts. Turned on by the user's decision of 2026-10-03, see
 # docs/superpowers/specs/2026-10-03-submit-on-explicit-apply-design.md.
 SUBMISSION_IMPLEMENTED = True
 
@@ -746,7 +746,7 @@ async def submit(conn: sqlite3.Connection, job_id: int, mode: str,
     waits for the human's DECISION in the job chat) or "auto" (CONFIRMs are
     auto-approved). What an approval MEANS is can_submit's call:
     SUBMISSION_IMPLEMENTED and this caller's `submit_allowed` (only the Apply
-    button passes it; a resume also needs its checkpoint's own bit), or an
+    and Apply-anyway buttons pass it; a resume also needs its checkpoint's own bit), or an
     injected run_agent (the test seam). Without it the run still fills and
     CONFIRMs, never clicks Submit, and ends DRAFT_READY.
 
@@ -841,7 +841,7 @@ async def submit(conn: sqlite3.Connection, job_id: int, mode: str,
                    _resume_text(resume_row),
                    str(_stage_resume(resume_path, profile, job_id)))
     score = score_row["weighted_score"] if score_row else None
-    # Per run, fail-closed: only the Apply button passes submit_allowed, and a
+    # Per run, fail-closed: only the Apply buttons pass submit_allowed, and a
     # Continue inherits its checkpoint's bit (NULL/0 never escalates). An
     # injected run_agent stays the test seam for can_submit.
     allowed = submit_allowed and (not resume or cp["can_submit"] == 1)

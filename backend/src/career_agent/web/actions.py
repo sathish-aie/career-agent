@@ -104,8 +104,9 @@ async def do_apply(conn: sqlite3.Connection, job_id: int, allow_skip: bool,
                    submit_allowed: bool = False) -> dict:
     """The Applications page opens the job's chat before this returns, so a
     refusal is posted there too -- except the needs_answer park, whose card
-    is already in the chat. `submit_allowed`: only the job's Apply button
-    passes it (api.api_apply, app.apply); Track anyway and Home's card draft."""
+    is already in the chat. `submit_allowed`: only a click on the job passes it
+    (Apply and Apply anyway: api_apply, api_override, app.apply, app.override);
+    Home's card drafts."""
     result = await _do_apply(conn, job_id, allow_skip, event, brief_path,
                              candidate_profile_path, conn_factory,
                              submit_allowed=submit_allowed)
