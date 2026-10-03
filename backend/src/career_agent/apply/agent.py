@@ -69,6 +69,9 @@ class AgentResult:
     # are the token counts seen instead -- no per-model price table lives
     # in this code, so they are not converted to dollars.
     usage: dict | None = None
+    # Set only by ats._live_run_agent on a can_submit APPLIED: confirmation.judge's
+    # evidence (never page text). None means unchecked, which never verifies.
+    submit_check: dict | None = None
 
 
 _SIMPLE = {"APPLIED": "applied", "EXPIRED": "expired",

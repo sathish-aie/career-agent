@@ -51,15 +51,29 @@ def fake_agent(result: AgentResult):
         # **kw: submit hands the live runner (which _use_live_fake stands in
         # for) its model; an injected run_agent never gets one.
         _fake.models.append(kw.get("model"))
+        _fake.kws.append(kw)
         _fake.prompts.append(prompt)
         _fake.job_ids.append(job_id)
         _fake.nonces.append(nonce)
         return result
     _fake.prompts = []
     _fake.models = []
+    _fake.kws = []
     _fake.job_ids = []
     _fake.nonces = []
     return _fake
+
+
+VERIFIED = {"verified": True, "url": "https://x/apply/thanks", "marker": "thanks_for_applying",
+            "url_changed": True, "form_gone": True, "same_host": True, "title": "Thanks",
+            "checked_at": "2026-10-03 00:00:00"}
+
+
+def _applied(**kw):
+    """APPLIED as _live_run_agent returns it once confirmation.check saw the
+    employer's own confirmation page -- the only APPLIED recorded 'submitted'."""
+    kw.setdefault("submit_check", dict(VERIFIED))
+    return AgentResult("applied", **kw)
 
 
 async def _submit(conn, **kw):
@@ -180,16 +194,18 @@ async def test_draft_failure_records_a_failed_row(conn):
     assert row["failure_reason"] == "stuck"
 
 
-async def test_draft_that_claims_it_applied_is_held_not_retried(conn, monkeypatch):
+@pytest.mark.parametrize("unverified", [True, False])
+async def test_draft_that_claims_it_applied_is_held_not_retried(conn, monkeypatch, unverified):
     """With submission disabled the prompt forbids clicking Submit. An APPLIED
     there means the true state is unknown and possibly submitted -- it must
-    block, never become a retryable failure that sends a second time."""
-    _use_live_fake(monkeypatch, AgentResult("applied"))
+    block, never become a retryable failure that sends a second time. Not even
+    a passing page check upgrades it: the run had no permission to send."""
+    _use_live_fake(monkeypatch, AgentResult("applied") if unverified else _applied())
     r = await _submit(conn, mode="manual")
     assert not r["ok"]
     row = _apps(conn)[0]
-    assert row["status"] == "held_unknown"
-    assert row["failure_reason"] == "applied_during_draft"
+    assert (row["status"], row["failure_reason"], row["submitted_at"]) == (
+        "held_unknown", "applied_during_draft", None)
 
 
 async def test_a_prior_draft_neither_pins_answers_nor_changes_the_mode(conn):
@@ -198,7 +214,7 @@ async def test_a_prior_draft_neither_pins_answers_nor_changes_the_mode(conn):
     with checkpoints, Task 10) and the caller's mode stands."""
     await _submit(conn, mode="manual",
                   run_agent=fake_agent(AgentResult("draft_ready")))
-    fake = fake_agent(AgentResult("applied"))
+    fake = fake_agent(_applied())
     r = await _submit(conn, mode="auto", run_agent=fake)
     assert r["ok"] and r["status"] == "submitted"
     assert "== PREVIOUSLY ANSWERED" not in fake.prompts[0]
@@ -220,7 +236,7 @@ async def test_send_dispatch_for_a_non_submitting_outcome(conn, result,
 
 
 async def test_auto_mode_prompt_is_pre_approved_and_can_submit(conn):
-    fake = fake_agent(AgentResult("applied"))
+    fake = fake_agent(_applied())
     r = await _submit(conn, mode="auto", run_agent=fake)
     assert r["ok"]
     assert "== PREVIOUSLY ANSWERED" not in fake.prompts[0]
@@ -273,7 +289,7 @@ async def test_retryable_failure_promotes_at_max_attempts(conn):
     assert statuses == ["failed", "failed", "failed_permanent"]
     # and the permanent row now blocks any further attempt
     r = await _submit(conn, mode="auto",
-                      run_agent=fake_agent(AgentResult("applied")))
+                      run_agent=fake_agent(_applied()))
     assert not r["ok"] and "already has" in r["reason"]
 
 
@@ -295,7 +311,7 @@ async def test_an_unknown_state_send_holds_instead_of_retrying(conn, reason):
     assert row["failure_reason"] == reason
     # and it blocks: the queue can never re-pick this job
     again = await _submit(conn, mode="auto",
-                          run_agent=fake_agent(AgentResult("applied")))
+                          run_agent=fake_agent(_applied()))
     assert not again["ok"] and "already has" in again["reason"]
 
 
@@ -351,20 +367,20 @@ async def test_blocking_status_refuses_new_attempt(conn):
                  " VALUES (1, 'base-v1', 'submitted')")
     conn.commit()
     r = await _submit(conn, mode="manual",
-                      run_agent=fake_agent(AgentResult("applied")))
+                      run_agent=fake_agent(_applied()))
     assert not r["ok"] and "already has" in r["reason"]
 
 
 async def test_missing_profile_raises(conn):
     with pytest.raises(RuntimeError, match="candidate_profile"):
         await _submit(conn, mode="manual", profile=None,
-                      run_agent=fake_agent(AgentResult("applied")))
+                      run_agent=fake_agent(_applied()))
 
 
 async def test_unknown_job_is_reported(conn):
     r = await ats_apply.submit(conn, 99, mode="manual", brief=BRIEF,
                                profile=PROFILE,
-                               run_agent=fake_agent(AgentResult("applied")))
+                               run_agent=fake_agent(_applied()))
     assert not r["ok"] and "not found" in r["reason"]
 
 
@@ -446,16 +462,16 @@ async def test_a_draft_does_not_block_a_real_submission(conn):
     await _submit(conn, mode="manual",
                   run_agent=fake_agent(AgentResult("draft_ready", answers={})))
     r = await _submit(conn, mode="auto",
-                      run_agent=fake_agent(AgentResult("applied")))
+                      run_agent=fake_agent(_applied()))
     assert r["ok"]
     assert {a["status"] for a in _apps(conn)} == {"draft", "submitted"}
 
 
 async def test_second_real_submission_is_refused(conn):
     await _submit(conn, mode="auto",
-                  run_agent=fake_agent(AgentResult("applied")))
+                  run_agent=fake_agent(_applied()))
     r = await _submit(conn, mode="auto",
-                      run_agent=fake_agent(AgentResult("applied")))
+                      run_agent=fake_agent(_applied()))
     assert not r["ok"] and "already" in r["reason"]
     assert len(_apps(conn)) == 1
 
@@ -549,7 +565,7 @@ async def test_a_late_failure_does_not_reopen_a_swept_row(conn):
     assert row["status"] == "held_unknown"
     assert row["status"] in ats_apply.BLOCKING     # ... so QUEUE_WHERE skips it
     again = await _submit(conn, mode="auto",
-                          run_agent=fake_agent(AgentResult("applied")))
+                          run_agent=fake_agent(_applied()))
     assert not again["ok"] and "already has" in again["reason"]
 
 
@@ -557,7 +573,7 @@ async def test_a_late_applied_still_upgrades_a_swept_row(conn):
     """The truthful upgrade must never be suppressed: the form really was
     submitted."""
     r = await _submit(conn, mode="auto",
-                      run_agent=_sweeping_agent(conn, AgentResult("applied")))
+                      run_agent=_sweeping_agent(conn, _applied()))
     assert r["ok"] and r["status"] == "submitted"
     assert _apps(conn)[-1]["status"] == "submitted"
 
@@ -667,7 +683,7 @@ async def test_an_auto_submit_with_no_answers_is_recorded_and_flagged(conn):
     answers = '{}'. The send happened and must still be recorded; the gap has
     to be visible."""
     r = await _submit(conn, mode="auto",
-                      run_agent=fake_agent(AgentResult("applied")))
+                      run_agent=fake_agent(_applied()))
     assert r["ok"] and r["status"] == "submitted"
     row = _apps(conn)[-1]
     assert row["status"] == "submitted"          # never lose the send itself
@@ -682,7 +698,7 @@ async def test_a_submit_with_an_approved_confirm_is_not_flagged(conn, tmp_path):
     async def fake(prompt, job_id, nonce, events, session_id=None, resume=False):
         events.on_confirm({"fields": [{"label": "q", "value": "a"}], "files": [],
                            "account_actions": [], "memory_used": [], "notes": ""})
-        return AgentResult("applied")
+        return _applied()
 
     await _submit(conn, mode="auto", run_agent=fake, conn_factory=factory)
     row = _apps(conn)[-1]
@@ -690,6 +706,38 @@ async def test_a_submit_with_an_approved_confirm_is_not_flagged(conn, tmp_path):
     assert row["failure_reason"] is None
     assert json.loads(row["answers"]) == {"q": "a"}
     assert "confirm_missing" not in _event_types(conn)
+
+
+async def test_a_verified_submit_is_recorded_with_its_evidence(conn):
+    r = await _submit(conn, mode="manual", run_agent=fake_agent(_applied()))
+    assert r == {"ok": True, "job_id": 1, "status": "submitted"}
+    row = _apps(conn)[-1]
+    assert row["status"] == "submitted" and row["submitted_at"] is not None
+    assert json.loads(row["confirmation"]) == VERIFIED
+    assert "submitted" in _event_types(conn)
+
+
+@pytest.mark.parametrize("check,stored", [
+    (None, {"verified": False, "error": "not_checked"}),
+    (dict(VERIFIED, verified=False, marker=None), dict(VERIFIED, verified=False, marker=None)),
+    ({"verified": False, "error": "TimeoutError"}, {"verified": False, "error": "TimeoutError"})])
+async def test_an_unconfirmed_submit_is_held_never_recorded_submitted(conn, check, stored):
+    """A clicked Submit is not a submission: without the employer's own
+    confirmation page the true state is unknown -- held, never retried."""
+    r = await _submit(conn, mode="manual",
+                      run_agent=fake_agent(AgentResult("applied", submit_check=check)))
+    assert not r["ok"] and "submit_unconfirmed" in r["reason"]
+    row = _apps(conn)[-1]
+    assert (row["status"], row["failure_reason"], row["submitted_at"]) == (
+        "held_unknown", "submit_unconfirmed", None)
+    assert json.loads(row["confirmation"]) == stored
+    assert "submitted" not in _event_types(conn) and "held_unknown" in _event_types(conn)
+
+
+async def test_an_unconfirmed_late_applied_leaves_a_swept_hold_alone(conn):
+    r = await _submit(conn, mode="auto",
+                      run_agent=_sweeping_agent(conn, AgentResult("applied")))
+    assert not r["ok"] and _apps(conn)[-1]["status"] == "held_unknown"
 
 
 def _second_job(conn):
@@ -742,7 +790,7 @@ async def test_a_queued_send_does_not_age_its_own_in_flight_row(conn):
                            " WHERE status = 'in_flight'").fetchone()
         started.append(row["n"])
         await asyncio.sleep(0.02)
-        return AgentResult("applied", answers={"q": "a"})
+        return _applied(answers={"q": "a"})
 
     await asyncio.gather(
         ats_apply.submit(conn, 1, mode="auto", brief=BRIEF, profile=PROFILE,
@@ -770,7 +818,7 @@ async def test_two_same_job_sends_produce_one_row_and_one_refusal(conn):
 
     async def runner(prompt, job_id, nonce, events, session_id=None, resume=False):
         await asyncio.sleep(0.01)
-        return AgentResult("applied", answers={"q": "a"})
+        return _applied(answers={"q": "a"})
 
     held = asyncio.create_task(
         ats_apply.submit(conn, job2, mode="manual", brief=BRIEF,
@@ -937,7 +985,7 @@ async def test_a_late_hold_does_not_delete_a_swept_row(conn, result, key):
     row = _apps(conn)[-1]
     assert row["status"] == "held_unknown"
     again = await _submit(conn, mode="auto",
-                          run_agent=fake_agent(AgentResult("applied")))
+                          run_agent=fake_agent(_applied()))
     assert not again["ok"] and "already has" in again["reason"]
 
 
@@ -1175,7 +1223,7 @@ async def test_confirm_in_auto_mode_is_auto_approved_and_recorded(conn, runs, fa
         run = runs[jid] = FakeRun(nonce, events)
         _waiting_on(run, events, "confirm", _confirm(Name="Asha"))
         assert run.sent == [f'DECISION:{nonce}:{{"decision": "approve"}}']
-        return AgentResult("applied")
+        return _applied()
 
     r = await _submit(conn, mode="auto", run_agent=fake, conn_factory=factory)
     assert r["ok"] and r["status"] == "submitted"
@@ -1193,7 +1241,7 @@ async def test_auto_approval_of_a_confirm_in_the_result_turn_still_records(conn,
         run = runs[jid] = FakeRun(nonce, events)
         events.on_confirm(_confirm(Name="Asha"))          # not waiting
         assert run.sent == []
-        return AgentResult("applied")
+        return _applied()
 
     await _submit(conn, mode="auto", run_agent=fake, conn_factory=factory)
     assert json.loads(_apps(conn)[-1]["answers"]) == {"Name": "Asha"}
@@ -1218,7 +1266,7 @@ async def test_confirm_in_manual_mode_waits_for_a_decision(conn, runs, factory):
         _waiting_on(run, events, "confirm", _confirm(Name="Asha", Phone="+91"))
         second = chat.open_prompt_for_job(factory(), jid)
         assert actions.answer_prompt(factory(), second["id"], {"decision": "approve"}, factory)["ok"]
-        return AgentResult("applied")
+        return _applied()
 
     r = await _submit(conn, mode="manual", run_agent=fake, conn_factory=factory)
     assert r["ok"]
@@ -1809,7 +1857,8 @@ async def test_a_stale_card_after_a_requeue_never_reaches_the_new_run(conn, runs
 
 @pytest.mark.parametrize("code,status,event", [
     ("applied", "submitted", "submitted_without_decision"),
-    ("draft_ready", "draft", "draft_without_decision")])
+    # an approve went out in a run that could submit: held, whatever it reports
+    ("draft_ready", "held_unknown", "held_unknown")])
 async def test_a_later_unapproved_confirm_is_not_recorded_as_approved(
         conn, runs, factory, code, status, event):
     """I1: the human approved CONFIRM #1; the agent then changed a field and
@@ -1823,7 +1872,7 @@ async def test_a_later_unapproved_confirm_is_not_recorded_as_approved(
         first = chat.open_prompt_for_job(factory(), jid)["id"]
         assert actions.answer_prompt(factory(), first, {"decision": "approve"}, factory)["ok"]
         events.on_confirm(_confirm(Name="Asha", Phone="+91"))   # RESULT turn: not waiting
-        return AgentResult(code)
+        return _applied() if code == "applied" else AgentResult(code)
 
     await _submit(conn, mode="manual", run_agent=fake, conn_factory=factory)
     row = _apps(conn)[-1]
@@ -1834,7 +1883,7 @@ async def test_a_later_unapproved_confirm_is_not_recorded_as_approved(
 
 
 async def test_confirm_missing_means_no_confirm_at_all(conn, runs, factory):
-    await _submit(conn, mode="manual", run_agent=fake_agent(AgentResult("applied")),
+    await _submit(conn, mode="manual", run_agent=fake_agent(_applied()),
                   conn_factory=factory)
     assert _apps(conn)[-1]["failure_reason"] == "confirm_missing"
 
@@ -1886,6 +1935,50 @@ async def test_answer_timeout_after_an_approve_holds_when_it_could_have_submitte
         return
     row = _apps(conn)[-1]
     assert (row["status"], row["failure_reason"]) == (expected, "answer_timeout")
+
+
+def _approving(runs, factory, result):
+    """A manual run whose CONFIRM the human approves, then `result`."""
+    from career_agent.web import actions
+
+    async def fake(prompt, jid, nonce, events, session_id=None, resume=False, **kw):
+        run = runs[jid] = FakeRun(nonce, events)
+        _waiting_on(run, events, "confirm", _confirm(Name="Asha"))
+        pid = chat.open_prompt_for_job(factory(), jid)["id"]
+        assert actions.answer_prompt(factory(), pid, {"decision": "approve"}, factory)["ok"]
+        return result
+    return fake
+
+
+@pytest.mark.parametrize("result,reason", [
+    (AgentResult("draft_ready"), "draft_ready"),
+    (AgentResult("captcha"), "captcha"),
+    (AgentResult("needs_answer", "Rate your Python"), "needs_answer"),
+    (AgentResult("needs_answer", "Enter the one-time OTP"), "needs_answer"),
+    (AgentResult("failed", "validation_error"), "validation_error"),
+    (AgentResult("failed", "submit_not_found"), "submit_not_found"),
+    (AgentResult("failed", "submit_unconfirmed"), "submit_unconfirmed"),
+    (AgentResult("failed", "stuck"), "stuck"),
+])
+async def test_after_an_approve_every_unverified_end_is_held(conn, runs, factory, result, reason):
+    """An approve in a run that could submit may have been followed by the
+    click: a CAPTCHA or questionnaire after Submit, a DRAFT_READY a page talked
+    the agent into -- requeueing any of them can apply twice."""
+    r = await _submit(conn, mode="manual", run_agent=_approving(runs, factory, result),
+                      conn_factory=factory)
+    assert not r["ok"] and not r.get("needs_answer")          # no park, no card
+    assert chat.open_prompt_for_job(conn, 1) is None
+    row = _apps(conn)[-1]
+    assert (row["status"], row["failure_reason"]) == ("held_unknown", reason)
+    assert ats_apply._blocking_status(conn, 1)["status"] == "held_unknown"
+
+
+async def test_an_unconfirmed_submit_keeps_the_approved_answers(conn, runs, factory):
+    """The held row's answers are the only record of what may have been sent."""
+    await _submit(conn, mode="manual", conn_factory=factory,
+                  run_agent=_approving(runs, factory, AgentResult("applied")))
+    row = _apps(conn)[-1]
+    assert (row["status"], json.loads(row["answers"])) == ("held_unknown", {"Name": "Asha"})
 
 
 async def test_a_cancel_before_the_run_registers_marks_it_cancelled(conn, runs):
@@ -2219,7 +2312,7 @@ async def test_a_failing_checkpoint_write_never_blocks_the_auto_approve(conn, ru
         run = runs[jid] = FakeRun(nonce, events)
         _waiting_on(run, events, "confirm", _confirm(Name="Asha"))
         assert run.sent == [f'DECISION:{nonce}:{{"decision": "approve"}}']
-        return AgentResult("applied")
+        return _applied()
 
     r = await _submit(conn, mode="auto", run_agent=fake, conn_factory=factory)
     assert r["ok"] and _apps(conn)[-1]["status"] == "submitted"
@@ -2380,7 +2473,7 @@ async def test_an_auto_approve_is_recorded_on_the_checkpoint(conn, runs, factory
         run = runs[jid] = FakeRun(nonce, events)
         _waiting_on(run, events, "confirm", _confirm(Name="Asha"))
         assert checkpoint.get(factory(), jid)["approve_sent"] == 1
-        return AgentResult("applied")
+        return _applied()
 
     await _submit(conn, mode="auto", run_agent=fake, conn_factory=factory)
 

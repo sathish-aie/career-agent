@@ -528,21 +528,48 @@ def _record_outcome(conn, job_id: int, app_id: int, url: str, result,
         (job_id, type_, payload))
 
     if code == "applied" and can_submit:
-        # Recorded regardless of a missing/unapproved CONFIRM -- the send
-        # happened, that is the irreversible truth -- but never silently:
+        check = result.submit_check or {"verified": False, "error": "not_checked"}
+        evidence = json.dumps(check)
+        if not check.get("verified"):
+            # The agent's word alone: the browser never showed the employer's
+            # confirmation (apply/confirmation.py). Possibly sent -- a human
+            # adjudicates, never a retry.
+            conn.execute(
+                "UPDATE application SET status = 'held_unknown',"
+                " failure_reason = 'submit_unconfirmed', answers = ?, confirmation = ?,"
+                " transcript_path = ? WHERE id = ? AND status = 'in_flight'",
+                (json.dumps(answers), evidence, result.transcript_path or None, app_id))
+            event("held_unknown", f"submit_unconfirmed: {check.get('error') or 'no confirmation page'}")
+            conn.commit()
+            return {"ok": False, "reason": "held_unknown: submit_unconfirmed"}
+        # Verified. Recorded regardless of a missing/unapproved CONFIRM -- the
+        # send happened, that is the irreversible truth -- but never silently:
         # failure_reason on a 'submitted' row is the gap marker. Unguarded on
         # purpose: held_unknown -> submitted is the truthful upgrade.
         slug = {"unapproved": "submitted_without_decision"}.get(gap, gap)
         conn.execute(
             "UPDATE application SET status = 'submitted', answers = ?,"
             " submitted_at = datetime('now'), transcript_path = ?,"
-            " failure_reason = ? WHERE id = ?",
-            (json.dumps(answers), result.transcript_path or None, slug, app_id))
+            " failure_reason = ?, confirmation = ? WHERE id = ?",
+            (json.dumps(answers), result.transcript_path or None, slug, evidence, app_id))
         event("submitted", url)
         if slug:
             event(slug, f"submitted without an approved latest CONFIRM: {result.transcript_path or url}")
         conn.commit()
         return {"ok": True, "job_id": job_id, "status": "submitted"}
+
+    if can_submit and approved_any:
+        # A DECISION approve went out, so Submit may have been clicked whatever
+        # the agent reports now (a CAPTCHA or questionnaire after the click, a
+        # validation error, a stop): never a draft, a delete or a requeue.
+        reason = "needs_answer" if code == "needs_answer" else _reason_of(result)
+        conn.execute(
+            "UPDATE application SET status = 'held_unknown', failure_reason = ?, answers = ?,"
+            " transcript_path = ? WHERE id = ? AND status = 'in_flight'",
+            (reason, json.dumps(answers), result.transcript_path or None, app_id))
+        event("held_unknown", detail or (result.reason if code == "needs_answer" else reason))
+        conn.commit()
+        return {"ok": False, "reason": f"held_unknown: {detail or reason}"}
 
     if code == "draft_ready":
         conn.execute(
