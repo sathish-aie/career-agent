@@ -170,7 +170,7 @@ async def api_apply(job_id: int):
     result = await actions.do_apply(
         m._conn(), job_id, allow_skip=False, event="human_applied",
         brief_path=m.BRIEF_PATH, candidate_profile_path=m.CANDIDATE_PROFILE_PATH,
-        conn_factory=m._chat_conn)
+        conn_factory=m._chat_conn, submit_allowed=True)   # the Apply button: may send
     return _result(result)
 
 

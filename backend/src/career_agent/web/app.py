@@ -189,7 +189,7 @@ async def apply(job_id: int):
     return _span(await actions.do_apply(
         conn, job_id, allow_skip=False, event="human_applied",
         brief_path=BRIEF_PATH, candidate_profile_path=CANDIDATE_PROFILE_PATH,
-        conn_factory=_chat_conn))
+        conn_factory=_chat_conn, submit_allowed=True))   # the Apply button: may send
 
 
 @app.post("/override/{job_id}", response_class=HTMLResponse)

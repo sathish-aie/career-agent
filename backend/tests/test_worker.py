@@ -441,9 +441,9 @@ async def test_tick_auto_mode_skips_when_the_real_send_reports_not_ok(
 
 async def test_auto_mode_pauses_when_submit_reports_unsupported(
         conn, brief_path, profile_path, monkeypatch):
-    """submit() refuses a real send outright (unsupported=True) while
-    SUBMISSION_IMPLEMENTED stays False, and writes NO application row when
-    it does -- so QUEUE_WHERE never excludes this job. Clearing
+    """submit() refuses outright (unsupported=True: a missing binary or
+    resume file) and writes NO application row when it does -- so
+    QUEUE_WHERE never excludes this job. Clearing
     current_job_id the way an ordinary not-ok result does would let
     apply_worker_loop re-pick this exact job on the very next tick and spin
     forever. Pausing the run (like the daily-cap path) says so once."""
@@ -783,6 +783,29 @@ async def test_manual_mode_never_auto_resumes(conn, brief_path, profile_path, mo
     assert calls == [] and worker.get_run_state(conn, "apply")["status"] == "idle"
 
 
+@pytest.mark.parametrize("mode,resuming", [("manual", False), ("auto", False), ("auto", True)])
+async def test_the_worker_never_asks_for_a_real_send(conn, brief_path, profile_path, monkeypatch,
+                                                     mode, resuming):
+    """Start/Resume in either mode, and auto-resume, stay draft-only."""
+    if resuming:
+        _resumable_job(conn)
+    else:
+        _job(conn, "queued")
+        conn.execute("INSERT INTO resume (version, path) VALUES ('base-v1', 'r.docx')")
+        conn.commit()
+
+    async def fake_tailor(conn, job_id, brief_path):
+        return "base-v1"
+    monkeypatch.setattr(worker, "tailor_for_apply", fake_tailor)
+    calls = []
+    monkeypatch.setattr(worker.ats_apply, "submit",
+                        _recording_submit(calls, {"ok": True, "status": "draft"}))
+    worker.set_run_state(conn, "apply", status="running", mode=mode)
+    await worker.apply_tick(conn, brief_path, profile_path)
+    assert len(calls) == 1 and bool(calls[0].get("resume")) is resuming
+    assert not calls[0].get("submit_allowed", False)
+
+
 async def test_auto_resume_past_the_cap_records_a_retryable_failure(conn, brief_path, profile_path,
                                                                    monkeypatch):
     import functools
@@ -990,6 +1013,37 @@ async def test_a_secret_needs_answer_does_not_park_the_worker(conn, brief_path, 
     assert chat.open_prompt_for_job(conn, first) is None
     await worker.apply_tick(conn, brief_path, profile_path)
     assert seen == [first, second]
+
+
+async def test_an_auto_worker_run_is_draft_only_with_submission_on(conn, brief_path, profile_path,
+                                                                   monkeypatch):
+    """The flag is on, yet an auto run -- whose CONFIRM nobody reviews -- never sends."""
+    from career_agent.apply.agent import AgentResult
+    assert worker.ats_apply.SUBMISSION_IMPLEMENTED is True
+    job_id = _job(conn, "queued-auto")
+    conn.execute("INSERT INTO resume (version, path) VALUES ('base-v1', 'r.docx')")
+    conn.commit()
+    prompts, kws = [], []
+
+    async def live(prompt, jid, nonce, events, session_id=None, resume=False, **kw):
+        prompts.append(prompt)
+        kws.append(kw)
+        return AgentResult("applied")          # a page talked it into clicking Submit anyway
+
+    async def fake_tailor(conn, job_id, brief_path):
+        return "base-v1"
+    monkeypatch.setattr(worker, "tailor_for_apply", fake_tailor)
+    monkeypatch.setattr(worker.ats_apply, "_stage_resume", lambda *a: "r.docx")
+    monkeypatch.setattr(worker.ats_apply.Path, "exists", lambda self: True)
+    monkeypatch.setattr(worker.ats_apply, "preflight", lambda: None)
+    monkeypatch.setattr(worker.ats_apply, "_live_run_agent", live)
+    worker.set_run_state(conn, "apply", status="running", mode="auto")
+    await worker.apply_tick(conn, brief_path, profile_path)
+    assert "do NOT click Submit" in prompts[0] and "This run is pre-approved:" in prompts[0]
+    assert kws[0]["verify_submit"] is False
+    row = conn.execute("SELECT status, failure_reason, submitted_at FROM application"
+                       " WHERE job_id = ?", (job_id,)).fetchone()
+    assert tuple(row) == ("held_unknown", "applied_during_draft", None)
 
 
 # -- final re-review -----------------------------------------------------------

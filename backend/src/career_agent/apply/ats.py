@@ -37,13 +37,14 @@ BLOCKING = ("in_flight", "submitted", "held_unknown", "failed_permanent")
 # the worker ever runs in a process of its own.
 PENDING: set[int] = set()
 
-# The outermost kill switch: a real send is refused unless this is flipped
-# by hand, for EVERY source (the agent engine is source-agnostic, so the
-# old per-source refusal is gone and this flag is the only gate left). See
-# the "Rollout" section of
-# docs/superpowers/specs/2026-08-23-auto-submission-design.md. Drafting is
-# not gated -- it fills a form without submitting it.
-SUBMISSION_IMPLEMENTED = False
+# The global master switch. On, a run MAY submit -- only one whose caller
+# passes submit_allowed: the job's Apply button (api.api_apply, app.apply) and
+# a Continue of a session Apply started (apply_checkpoint.can_submit is the
+# per-run bit; a resume never escalates). The worker (Start/Resume,
+# auto-resume), Track anyway and Home's "apply to" card always draft. Off,
+# every run drafts. Turned on by the user's decision of 2026-10-03, see
+# docs/superpowers/specs/2026-10-03-submit-on-explicit-apply-design.md.
+SUBMISSION_IMPLEMENTED = True
 
 # Reasons a retry can never fix: the posting is gone, the platform is one
 # we refuse on principle, or the candidate is not eligible. Anything else
@@ -736,14 +737,16 @@ async def submit(conn: sqlite3.Connection, job_id: int, mode: str,
                  brief: CareerBrief,
                  profile: CandidateProfile | None = None,
                  resume_version: str | None = None,
-                 run_agent=None, conn_factory=None, resume: bool = False) -> dict:
+                 run_agent=None, conn_factory=None, resume: bool = False, *,
+                 submit_allowed: bool = False) -> dict:
     """Run one apply-agent session for a job and translate its AgentResult
     into this module's state machine. `mode` is "manual" (every CONFIRM
     waits for the human's DECISION in the job chat) or "auto" (CONFIRMs are
-    auto-approved). What an approval MEANS is the kill switch's call:
-    can_submit = SUBMISSION_IMPLEMENTED or an injected run_agent (the test
-    seam); without it the run still fills and CONFIRMs, never clicks Submit,
-    and ends DRAFT_READY.
+    auto-approved). What an approval MEANS is can_submit's call:
+    SUBMISSION_IMPLEMENTED and this caller's `submit_allowed` (only the Apply
+    button passes it; a resume also needs its checkpoint's own bit), or an
+    injected run_agent (the test seam). Without it the run still fills and
+    CONFIRMs, never clicks Submit, and ends DRAFT_READY.
 
     `run_agent`: `async (prompt, job_id, nonce, events: RunEvents,
     session_id=None, resume=False) -> AgentResult`. `conn_factory` is a
@@ -836,7 +839,11 @@ async def submit(conn: sqlite3.Connection, job_id: int, mode: str,
                    _resume_text(resume_row),
                    str(_stage_resume(resume_path, profile, job_id)))
     score = score_row["weighted_score"] if score_row else None
-    can_submit = SUBMISSION_IMPLEMENTED or run_agent is not None
+    # Per run, fail-closed: only the Apply button passes submit_allowed, and a
+    # Continue inherits its checkpoint's bit (NULL/0 never escalates). An
+    # injected run_agent stays the test seam for can_submit.
+    allowed = submit_allowed and (not resume or cp["can_submit"] == 1)
+    can_submit = (SUBMISSION_IMPLEMENTED and allowed) or run_agent is not None
     carried = 0
     if resume and (cp["mode"], cp["can_submit"]) != (mode, int(can_submit)):
         # Never continue a session under other rules: an auto session resumed
@@ -895,6 +902,10 @@ async def submit(conn: sqlite3.Connection, job_id: int, mode: str,
             # Another start for this job ran while this one queued (a draft, a
             # failure, or a session that stopped resumable): never a second one.
             return {"ok": False, "reason": f"job {job_id} was started by another request meanwhile"}
+        # Authoritative, like the BLOCKING re-check above: two Apply clicks both
+        # pass worker.guard's cap check before either takes this lock.
+        if can_submit and store.submitted_today(conn) >= brief.daily_cap:
+            return {"ok": False, "reason": f"Daily cap of {brief.daily_cap} reached."}
         # A crashed run's cards can never be answered; this run's cards are
         # the ones created after `baseline` (the answer API refuses older).
         chat.expire_open_prompts(conn, job_id)

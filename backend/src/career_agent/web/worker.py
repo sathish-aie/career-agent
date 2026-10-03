@@ -111,10 +111,7 @@ def guard(conn: sqlite3.Connection, job_id: int, allow_skip: bool,
         return "The gate skipped this one. Use Apply anyway to override."
 
     brief = load_brief(brief_path)
-    used = conn.execute(
-        "SELECT COUNT(*) n FROM application WHERE status = 'submitted'"
-        " AND date(submitted_at) = date('now')").fetchone()["n"]
-    if used >= brief.daily_cap:
+    if store.submitted_today(conn) >= brief.daily_cap:
         return f"Daily cap of {brief.daily_cap} reached."
 
     paused = conn.execute(
@@ -241,8 +238,8 @@ async def _tick_job(conn, state, job_id: int, resume_id, brief_path, profile_pat
 
     if not result["ok"]:
         if result.get("unsupported"):
-            # Real sends are refused outright while SUBMISSION_IMPLEMENTED
-            # stays False, and that refusal writes no application row --
+            # A missing binary or resume file refuses the run outright, and
+            # that refusal writes no application row --
             # QUEUE_WHERE only excludes a job once one exists, so clearing
             # current_job_id here would let the very next tick re-pick this
             # same job and spin forever. Pause once instead, same as the

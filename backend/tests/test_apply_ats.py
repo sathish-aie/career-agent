@@ -160,6 +160,20 @@ async def test_with_the_kill_switch_off_the_prompt_cannot_submit(conn, monkeypat
     assert "notice period -> 30 days" in prompt
 
 
+@pytest.mark.parametrize("allowed", [True, False])
+async def test_only_an_apply_click_lets_a_run_submit(conn, monkeypatch, allowed):
+    """The switch is on, yet a run may send only when its caller is the job's
+    Apply button -- on the live-runner path, exactly as production runs it."""
+    fake = _use_live_fake(monkeypatch, AgentResult("draft_ready"))
+    r = await _submit(conn, mode="manual", submit_allowed=allowed)
+    assert r["ok"] and r["status"] == "draft"
+    p = fake.prompts[0]
+    assert ("do NOT click Submit" in p) is not allowed
+    assert (f"RESULT:{fake.nonces[0]}:FAILED:submit_not_found" in p) is allowed
+    assert fake.kws[0]["verify_submit"] is allowed
+    assert checkpoint.get(conn, 1)["can_submit"] == int(allowed)
+
+
 async def test_draft_needs_answer_passthrough(conn):
     fake = fake_agent(AgentResult("needs_answer", "Do you have a PMP?"))
     r = await _submit(conn, mode="manual", run_agent=fake)
@@ -358,8 +372,21 @@ async def test_the_kill_switch_turns_every_source_into_a_draft(conn, monkeypatch
     assert "do NOT click Submit" in fake.prompts[0]
 
 
-def test_submission_stays_disabled():
-    assert ats_apply.SUBMISSION_IMPLEMENTED is False
+def test_submission_is_on_and_each_run_must_be_allowed_to_send():
+    """User decision 2026-10-03: the switch is on; what a run may do is its
+    caller's submit_allowed -- keyword-only and closed by default."""
+    import inspect
+    assert ats_apply.SUBMISSION_IMPLEMENTED is True
+    p = inspect.signature(ats_apply.submit).parameters["submit_allowed"]
+    assert p.kind is p.KEYWORD_ONLY and p.default is False
+
+
+def test_no_production_caller_injects_a_runner():
+    """An injected run_agent means can_submit (the test seam): a web caller
+    passing one would bypass the Apply-only permission."""
+    web_dir = Path(ats_apply.__file__).resolve().parents[1] / "web"
+    assert not [p.name for p in web_dir.rglob("*.py")
+                if "run_agent" in p.read_text(encoding="utf-8")]
 
 
 async def test_blocking_status_refuses_new_attempt(conn):
@@ -836,6 +863,35 @@ async def test_two_same_job_sends_produce_one_row_and_one_refusal(conn):
     loser = [r for r in results if not r["ok"]][0]
     assert "already has" in loser["reason"]
     assert [a["status"] for a in _apps(conn)] == ["submitted"]
+
+
+async def test_the_daily_cap_is_rechecked_inside_the_lock(conn):
+    """Two Apply clicks on different jobs both pass guard() before either
+    sends; the cap must still hold when the second one's turn comes."""
+    job2 = _second_job(conn)
+    capped = CareerBrief(target_titles=["AI Engineer"], search_locations=["Chennai"],
+                         daily_cap=1)
+    ran = []
+
+    async def runner(prompt, job_id, nonce, events, session_id=None, resume=False):
+        ran.append(job_id)
+        await asyncio.sleep(0.01)
+        return _applied()
+
+    lock = ats_apply._agent_lock()
+    await lock.acquire()                # both pass the early checks and queue on the lock
+    try:
+        t1 = asyncio.create_task(ats_apply.submit(conn, 1, mode="manual", brief=capped,
+                                                  profile=PROFILE, run_agent=runner))
+        t2 = asyncio.create_task(ats_apply.submit(conn, job2, mode="manual", brief=capped,
+                                                  profile=PROFILE, run_agent=runner))
+        await asyncio.sleep(0.1)
+    finally:
+        lock.release()
+    a, b = await t1, await t2
+    assert len(ran) == 1 and sorted([a["ok"], b["ok"]]) == [False, True]
+    assert "Daily cap of 1" in (b if a["ok"] else a)["reason"]
+    assert [r["status"] for r in conn.execute("SELECT status FROM application")] == ["submitted"]
 
 
 def test_the_agent_deadline_fires_before_the_sweep_window():
@@ -2544,6 +2600,25 @@ async def test_a_queued_resume_is_refused_when_the_session_changed_under_it(conn
     r = await task
     assert not r["ok"] and "resumable" in r["reason"] and fake.prompts == []
     assert _apps(conn) == [] and checkpoint.get(conn, 1)["session_id"] == "sess-new"
+
+
+@pytest.mark.parametrize("stored,allowed,resumed,reason", [
+    (True, True, True, "submit_unconfirmed"),     # an Apply-started session keeps its power
+    (False, True, True, "applied_during_draft"),  # a draft-only session is never escalated
+    (None, True, False, "applied_during_draft"),  # legacy NULL: a fresh, draft-only session
+    (True, False, False, "applied_during_draft"),  # no Apply permission: mismatch, fresh draft
+])
+async def test_a_continue_inherits_the_sessions_permission_and_never_escalates(
+        conn, monkeypatch, stored, allowed, resumed, reason):
+    """With run_agent=None the outcome of an unverified APPLIED shows the
+    run's can_submit: submit_unconfirmed means it could send."""
+    _resumable_as(conn, mode="manual", can_submit=stored)
+    fake = _use_live_fake(monkeypatch, AgentResult("applied"))   # unverified on purpose
+    await _submit(conn, mode="manual", resume=True, submit_allowed=allowed)
+    assert fake.prompts[0].startswith("CONTINUE:") is resumed
+    assert fake.kws[0]["verify_submit"] is (reason == "submit_unconfirmed")
+    row = _apps(conn)[-1]
+    assert (row["status"], row["failure_reason"]) == ("held_unknown", reason)
 
 
 async def test_a_mismatch_fresh_start_carries_the_resume_count(conn):

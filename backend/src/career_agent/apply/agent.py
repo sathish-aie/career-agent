@@ -371,8 +371,15 @@ def _screening_section() -> str:
 
 def _steps_section(mode, can_submit) -> str:
     if can_submit:
-        on_approve = ("click Submit/Apply, confirm the acknowledgement page, output "
-                      "RESULT:APPLIED")
+        on_approve = (
+            "click the form's final submit control exactly once -- the one that sends the "
+            "application (e.g. \"Submit application\" or \"Submit\"), never Save, Next or "
+            "Back; if you cannot identify exactly one such control, click nothing and output "
+            "RESULT:FAILED:submit_not_found. After the click wait for the page to change: a "
+            "confirmation or thank-you message -> output RESULT:APPLIED and stay on that "
+            "page (do not navigate away or close the tab); validation errors, or the form "
+            "still showing -> change nothing and output RESULT:FAILED:validation_error; "
+            "neither within about 30 seconds -> output RESULT:FAILED:submit_unconfirmed")
     else:
         on_approve = ("do NOT click Submit -- submission is disabled on this system; "
                       "output RESULT:DRAFT_READY")
@@ -439,12 +446,16 @@ def _steps_section(mode, can_submit) -> str:
         "line yourself.\n"
         "\n"
         "== BEFORE APPLYING ==\n"
-        "When every field is filled, output exactly one line\n"
+        "When every field is filled -- on a multi-page form, on its last page -- output "
+        "exactly one line\n"
         '  CONFIRM:{"fields":[{"label":"...","value":"..."}],"files":["..."],'
         '"account_actions":["..."],"memory_used":["..."],"notes":"..."}\n'
         "listing EVERY field and value as it stands on the form (one line -- escape any "
         "newline inside a value as \\n), then END YOUR TURN and wait for a line "
         "beginning DECISION:.\n"
+        "Output CONFIRM only when every required field is filled, the resume shows as "
+        "attached and no validation error is visible; otherwise fix it, ASK the human, "
+        "or output RESULT:FAILED:stuck.\n"
         "Every label must be unique -- disambiguate repeated fields, e.g. \"Phone (mobile)\", "
         "\"Employer 2 — title\".\n"
         "Never click Submit/Apply unless a DECISION with decision approve has arrived "

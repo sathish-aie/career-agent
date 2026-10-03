@@ -610,7 +610,8 @@ def test_applications_page_shows_career_brief_panel(client):
     assert "Career Brief" in r.text
 
 
-def test_applications_page_shows_no_rollout_note_while_flag_is_off(client):
+def test_applications_page_shows_no_rollout_note_while_flag_is_off(client, monkeypatch):
+    monkeypatch.setattr(web.ats_apply, "SUBMISSION_IMPLEMENTED", False)
     r = client.get("/applications")
     assert "outcomes recorded" not in r.text
 
@@ -2137,6 +2138,26 @@ def test_agent_routes_hand_a_chat_conn_factory_down(client, monkeypatch, path, k
 
     client.post(path, **kw)
     assert captured.get("conn_factory") is web._chat_conn
+
+
+@pytest.mark.parametrize("path,allowed", [("/apply/1", True), ("/api/apply/1", True),
+                                          ("/override/1", False), ("/api/override/1", False)])
+def test_only_the_apply_button_may_submit(client, monkeypatch, path, allowed):
+    """'Track anyway' / override stays draft-only (user decision 2026-10-03)."""
+    seen = []
+
+    async def fake_submit(conn, job_id, mode, **kw):
+        seen.append((job_id, mode, kw.get("submit_allowed", False)))
+        return {"ok": True, "job_id": job_id, "status": "draft"}
+
+    monkeypatch.setattr(web.ats_apply, "submit", fake_submit)
+    conn = db.connect(web.DB_PATH)
+    conn.execute("INSERT INTO application (job_id, resume_version, status)"
+                 " VALUES (1, 'base-v1', 'draft')")
+    conn.commit()
+    worker.set_run_state(conn, "apply", status="paused", mode="manual", current_job_id=1)
+    client.post(path)
+    assert seen == [(1, "manual", allowed)]
 
 
 def test_run_status_context_exposes_the_open_prompt_and_conversation(client):

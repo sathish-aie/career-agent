@@ -320,6 +320,7 @@ async def test_resume_launches_a_resumed_submit_in_the_background(db_path, runs,
     job_id, kw, claimed = calls[0]
     assert claimed == 1                                         # I5b: claimed while it runs
     assert job_id == 1 and kw["resume"] is True and kw["mode"] == "manual"
+    assert kw["submit_allowed"] is True     # Continue asks; submit() ANDs it with the session's bit
     assert kw["conn_factory"] == "factory" and kw["resume_version"] == "base-v1"
     assert checkpoint.get(c, 1)["auto_resumed"] == 0            # a human touch re-arms auto-resume
     texts = [m["content"] for m in chat.messages_after(c, chat.conversation_for_job(c, 1), 0)]
@@ -618,7 +619,7 @@ def fake_apply(monkeypatch):
     calls = []
 
     async def fake(conn, job_id, allow_skip, event, brief_path, candidate_profile_path,
-                   conn_factory=None):
+                   conn_factory=None, **kw):
         calls.append((job_id, allow_skip, event))
         return {"ok": True, "message": "Applied"}
     monkeypatch.setattr(actions, "do_apply", fake)
@@ -944,6 +945,26 @@ def test_approving_an_account_through_the_route_fills_off_the_event_loop(client,
 
 
 # -- final review ----------------------------------------------------------------
+
+async def test_only_the_apply_button_passes_submit_permission(db_path, runs, monkeypatch, tmp_path):
+    """Home's 'apply to #id' card is LLM-routed, not the job's Apply button:
+    draft-only, like any do_apply that does not ask. (Continue: see above.)"""
+    c = db.connect(db_path)
+    seen = []
+    monkeypatch.setattr(actions.worker, "tailor_for_apply", lambda *a, **kw: _async("base-v1"))
+    monkeypatch.setattr(actions.worker, "guard", lambda *a, **kw: None)
+
+    async def fake_submit(conn, job_id, **kw):
+        seen.append(kw.get("submit_allowed", False))
+        return {"ok": True, "job_id": job_id, "status": "draft"}
+    monkeypatch.setattr(actions.ats_apply, "submit", fake_submit)
+    brief = _brief(tmp_path)
+    await actions._home_apply_run(c, 1, brief, tmp_path / "p.toml", None)
+    await actions.do_apply(c, 1, True, "human_override", brief, tmp_path / "p.toml")
+    await actions.do_apply(c, 1, False, "human_applied", brief, tmp_path / "p.toml",
+                           submit_allowed=True)
+    assert seen == [False, False, True]
+
 
 async def _async(value):
     return value

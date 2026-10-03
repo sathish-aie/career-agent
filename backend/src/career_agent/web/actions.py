@@ -100,12 +100,15 @@ async def upload_master_resume(file) -> dict:
 
 async def do_apply(conn: sqlite3.Connection, job_id: int, allow_skip: bool,
                    event: str | None, brief_path: Path,
-                   candidate_profile_path: Path, conn_factory=None) -> dict:
+                   candidate_profile_path: Path, conn_factory=None, *,
+                   submit_allowed: bool = False) -> dict:
     """The Applications page opens the job's chat before this returns, so a
     refusal is posted there too -- except the needs_answer park, whose card
-    is already in the chat."""
+    is already in the chat. `submit_allowed`: only the job's Apply button
+    passes it (api.api_apply, app.apply); Track anyway and Home's card draft."""
     result = await _do_apply(conn, job_id, allow_skip, event, brief_path,
-                             candidate_profile_path, conn_factory)
+                             candidate_profile_path, conn_factory,
+                             submit_allowed=submit_allowed)
     if not result["ok"] and not result.pop("parked", False):
         worker.say(conn, job_id, f"Apply refused: {result['message']}")
     return result
@@ -140,7 +143,8 @@ def _apply_denial(conn: sqlite3.Connection, job_id: int, allow_skip: bool,
 
 async def _do_apply(conn: sqlite3.Connection, job_id: int, allow_skip: bool,
                     event: str | None, brief_path: Path,
-                    candidate_profile_path: Path, conn_factory=None) -> dict:
+                    candidate_profile_path: Path, conn_factory=None, *,
+                    submit_allowed: bool = False) -> dict:
     denial = _apply_denial(conn, job_id, allow_skip, brief_path)
     if denial:
         return {"ok": False, "message": denial}
@@ -151,7 +155,7 @@ async def _do_apply(conn: sqlite3.Connection, job_id: int, allow_skip: bool,
     ats_apply.PENDING.add(job_id)
     try:
         return await _claimed_apply(conn, job_id, event, brief_path, candidate_profile_path,
-                                    conn_factory)
+                                    conn_factory, submit_allowed=submit_allowed)
     finally:
         if owned:
             ats_apply.PENDING.discard(job_id)
@@ -159,7 +163,7 @@ async def _do_apply(conn: sqlite3.Connection, job_id: int, allow_skip: bool,
 
 async def _claimed_apply(conn: sqlite3.Connection, job_id: int, event: str | None,
                          brief_path: Path, candidate_profile_path: Path,
-                         conn_factory=None) -> dict:
+                         conn_factory=None, *, submit_allowed: bool = False) -> dict:
     # Before any await: a stale needs_answer card answered while this job is
     # tailoring would unpark it and let the worker run it a second time.
     chat.expire_open_prompts(conn, job_id)
@@ -178,7 +182,8 @@ async def _claimed_apply(conn: sqlite3.Connection, job_id: int, event: str | Non
         result = await ats_apply.submit(conn, job_id, mode="manual",
                                         brief=brief, profile=profile,
                                         resume_version=resume_version,
-                                        conn_factory=conn_factory)
+                                        conn_factory=conn_factory,
+                                        submit_allowed=submit_allowed)
     except Exception as exc:
         return {"ok": False, "message": str(exc)}
     if result.get("needs_answer"):
@@ -850,7 +855,8 @@ async def _resume_run(conn, job_id: int, brief_path: Path, candidate_profile_pat
         result = await ats_apply.submit(
             conn, job_id, mode="manual", brief=load_brief(brief_path),
             profile=context.load_candidate_profile_or_none(candidate_profile_path),
-            resume_version=resume_version, conn_factory=conn_factory, resume=True)
+            resume_version=resume_version, conn_factory=conn_factory, resume=True,
+            submit_allowed=True)     # submit() ANDs it with the session's own bit
     except Exception as exc:
         log.exception("continue failed for job %s", job_id)
         worker.say(conn, job_id, f"Continue failed: {exc}")

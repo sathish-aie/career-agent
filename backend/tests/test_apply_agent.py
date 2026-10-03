@@ -374,6 +374,32 @@ def test_can_submit_is_required():
         build_prompt(_job(), _profile(), _brief(), [], "r", "x.docx", mode="manual", nonce=N)
 
 
+def test_a_submitting_run_clicks_one_final_submit_and_waits_for_proof():
+    s = agent_mod._steps_section("manual", True)
+    for needle in ("exactly once", "RESULT:FAILED:submit_not_found",
+                   "RESULT:FAILED:validation_error", "RESULT:FAILED:submit_unconfirmed",
+                   "RESULT:APPLIED", "do not navigate away"):
+        assert needle in s, needle
+
+
+@pytest.mark.parametrize("mode", ["manual", "auto"])
+def test_a_draft_run_is_never_taught_the_submit_protocol(mode):
+    s = agent_mod._steps_section(mode, False)
+    assert "do NOT click Submit" in s
+    assert not any(slug in s for slug in ("submit_not_found", "validation_error",
+                                          "submit_unconfirmed"))
+
+
+@pytest.mark.parametrize("can_submit", [True, False])
+def test_confirm_waits_for_a_complete_form(can_submit):
+    """A CONFIRM over a missing field, an unattached resume or a visible
+    validation error gets approved into a doomed or partial submit."""
+    before = agent_mod._steps_section("manual", can_submit).split("== BEFORE APPLYING ==")[1]
+    for needle in ("last page", "every required field", "attached", "validation error",
+                   "RESULT:FAILED:stuck"):
+        assert needle in before, needle
+
+
 def test_uncovered_hard_facts_go_to_ask_not_a_guess():
     """HARD RULES and SCREENING used to order a RESULT:NEEDS_ANSWER stop; the
     interactive playbook routes the same question to an ASK instead, and

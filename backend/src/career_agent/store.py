@@ -17,6 +17,12 @@ def log(conn, job_id: int | None, type_: str, payload: str | None = None) -> Non
     conn.commit()
 
 
+def submitted_today(conn) -> int:
+    """What brief.daily_cap counts: rows submitted on today's UTC date."""
+    return conn.execute("SELECT COUNT(*) n FROM application WHERE status = 'submitted'"
+                        " AND date(submitted_at) = date('now')").fetchone()["n"]
+
+
 def upsert_jobs(conn, jobs: list[Job], brief: CareerBrief) -> int:
     """Insert jobs that are new and fresh. Returns how many were inserted."""
     inserted = 0
