@@ -2037,6 +2037,52 @@ def _use_live_fake(monkeypatch, result):
     return fake
 
 
+# Bound at import: tests/conftest.py stubs ats._live_run_agent per test.
+_REAL_LIVE_RUN_AGENT = ats_apply._live_run_agent
+
+
+@pytest.mark.parametrize("verify,code,checked", [(True, "applied", True),
+                                                 (True, "draft_ready", False),
+                                                 (False, "applied", False)])
+async def test_the_live_runner_reads_the_page_before_closing_chrome(monkeypatch, verify, code, checked):
+    """cleanup() kills Chrome; a later read could see the next job's browser.
+    Every collaborator is faked: no real Chrome, CDP or claude is reached."""
+    from career_agent.apply import chrome, confirmation
+    from career_agent.apply.runner import RunEvents
+    order = []
+    monkeypatch.setattr(chrome, "launch_chrome", lambda: "proc")
+    monkeypatch.setattr(chrome, "cleanup", lambda proc: order.append("cleanup"))
+
+    async def run_agent(prompt, **kw):
+        order.append("agent")
+        return AgentResult(code)
+    monkeypatch.setattr(agent_mod, "run_agent", run_agent)
+    monkeypatch.setattr(confirmation, "watch", lambda ev: order.append("watch") or ["https://x/apply"])
+    monkeypatch.setattr(confirmation, "check",
+                        lambda before: order.append("check") or {"verified": True, "before": before})
+    r = await _REAL_LIVE_RUN_AGENT("p", 1, "n", RunEvents(), verify_submit=verify)
+    assert order == (["watch"] if verify else []) + ["agent"] + (["check"] if checked else []) + ["cleanup"]
+    assert r.submit_check == ({"verified": True, "before": ["https://x/apply"]} if checked else None)
+
+
+async def test_a_hung_page_check_holds_instead_of_hanging(monkeypatch):
+    """The check runs off the loop with a bound; past it the run is unverified."""
+    import time
+    from career_agent.apply import chrome, confirmation
+    from career_agent.apply.runner import RunEvents
+    monkeypatch.setattr(chrome, "launch_chrome", lambda: "proc")
+    monkeypatch.setattr(chrome, "cleanup", lambda proc: None)
+
+    async def run_agent(prompt, **kw):
+        return AgentResult("applied")
+    monkeypatch.setattr(agent_mod, "run_agent", run_agent)
+    monkeypatch.setattr(confirmation, "watch", lambda ev: ["https://x/apply"])
+    monkeypatch.setattr(confirmation, "check", lambda before: time.sleep(1) or {"verified": True})
+    monkeypatch.setattr(confirmation, "TIMEOUT_S", 0.05)
+    r = await _REAL_LIVE_RUN_AGENT("p", 1, "n", RunEvents(), verify_submit=True)
+    assert r.submit_check == {"verified": False, "error": "timeout"}
+
+
 @pytest.mark.parametrize("stored, spawned", [("claude-opus-5", "claude-opus-5"),
                                               ("claude-retired-1", "claude-sonnet-5")])
 async def test_the_live_runner_gets_the_apply_model_setting(conn, monkeypatch, stored, spawned):

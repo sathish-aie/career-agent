@@ -203,20 +203,36 @@ def _apply_model(settings) -> str:
 
 async def _live_run_agent(prompt: str, job_id: int, nonce: str,
                           events: RunEvents, session_id: str | None = None,
-                          resume: bool = False, model: str = DEFAULT_APPLY_MODEL):
+                          resume: bool = False, model: str = DEFAULT_APPLY_MODEL,
+                          verify_submit: bool = False):
     """Default agent runner: a real Chrome around a real `claude` session.
-    Tests inject their own run_agent instead -- nothing in the test suite
-    ever reaches this, by house convention (no test spawns a browser or a
+    Tests inject their own run_agent instead -- no test reaches this with a
+    real Chrome or claude, by house convention (no test spawns a browser or a
     subprocess). `model` is bound by submit() (the only link holding a
     connection) rather than passed through the runner call, which every
-    injected fake declares positionally."""
+    injected fake declares positionally. So is `verify_submit`: this run may
+    send, so an APPLIED is checked against the browser's own page
+    (apply/confirmation.py) while Chrome is still up."""
     from career_agent.apply import chrome as chrome_mod
+    from career_agent.apply import confirmation
 
     proc = chrome_mod.launch_chrome()
+    # Before the run starts: the reader thread calls on_confirm.
+    before = confirmation.watch(events) if verify_submit else None
     try:
-        return await agent_mod.run_agent(prompt, job_id=job_id, nonce=nonce,
-                                         events=events, session_id=session_id,
-                                         resume=resume, model=model)
+        result = await agent_mod.run_agent(prompt, job_id=job_id, nonce=nonce,
+                                           events=events, session_id=session_id,
+                                           resume=resume, model=model)
+        if before is not None and result.code == "applied":
+            # The claude tree is gone, Chrome is not (cleanup below), and
+            # _agent_lock is held, so no other run's Chrome is on the port.
+            try:
+                result.submit_check = await asyncio.wait_for(
+                    asyncio.to_thread(confirmation.check, list(before)),
+                    confirmation.TIMEOUT_S)
+            except TimeoutError:        # the thread dies with Chrome in cleanup
+                result.submit_check = {"verified": False, "error": "timeout"}
+        return result
     except asyncio.CancelledError:
         _kill_live(job_id, events)   # before cleanup: never leave claude driving a dead Chrome
         raise
@@ -846,7 +862,7 @@ async def submit(conn: sqlite3.Connection, job_id: int, mode: str,
     # it re-pins today's choice -- it is a new session.
     model = (cp["model"] or _apply_model(store.get_settings(conn))) if resume \
         else _apply_model(store.get_settings(conn))
-    runner = run_agent or partial(_live_run_agent, model=model)
+    runner = run_agent or partial(_live_run_agent, model=model, verify_submit=can_submit)
     pinned = cp["answers"] if resume else None
     prompt = agent_mod.build_prompt(*prompt_args, mode=mode, can_submit=can_submit,
                                     nonce=nonce, pinned_answers=pinned, score=score,
