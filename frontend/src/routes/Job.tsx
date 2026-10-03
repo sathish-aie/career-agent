@@ -70,6 +70,8 @@ export interface JobDetail {
     /** The model this session was pinned to (MS1): the Chat tab's picker
      * locks to it while the session runs. */
     model: string | null
+    /** This session's own permission: approving its CONFIRM submits. */
+    can_submit: boolean
     resume_count: number
     max_resumes: number
     form_url: string | null
@@ -161,7 +163,8 @@ function HubHeader({ d, state, actions, setForm, askClearHold }: Omit<HubContext
       case 'drafted':
         main = primary('Open draft', () => actions.openChat())
         items = [
-          { label: 'Redo draft', icon: P.undo, onSelect: () => actions.startRun(applyPath(row)) },
+          { label: row.verdict === 'skip' ? 'Redo draft' : 'Apply again', icon: P.undo,
+            onSelect: () => actions.startRun(applyPath(row)) },
           markApplied, 'sep', dismiss,
         ]
         break

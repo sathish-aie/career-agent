@@ -192,7 +192,8 @@ function AppRow({ job, env, tab, expanded, onToggle, edge }: {
     ]
   } else if (state === 'drafted') {
     items = [
-      { label: 'Redo draft', icon: P.undo, onSelect: () => row.startRun(applyPath(job)) },
+      { label: job.verdict === 'skip' ? 'Redo draft' : 'Apply again', icon: P.undo,
+        onSelect: () => row.startRun(applyPath(job)) },
       ...(tab === 'all' ? [markApplied, 'sep' as const, dismiss] : []),
     ]
   } else if (state === 'held') {

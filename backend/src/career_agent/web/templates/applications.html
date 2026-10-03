@@ -61,7 +61,7 @@
       <td class="{{ j['verdict'] }}">{{ j["verdict"] }}</td>
       <td>
         <button hx-post="/apply/{{ j['id'] }}" class="btn"
-                title="Draft this job now, ahead of the queue. Review it in the status card above.">Apply</button>
+                title="Apply now: the agent fills the form; approving its summary in the job's chat submits it.">Apply</button>
         <button hx-post="/queue/{{ j['id'] }}/priority" hx-vals='{"direction":"up"}'>▲</button>
         <button hx-post="/queue/{{ j['id'] }}/priority" hx-vals='{"direction":"down"}'>▼</button>
         <button hx-post="/queue/{{ j['id'] }}/skip">Skip</button>
@@ -150,7 +150,7 @@
         {# /apply refuses a skip verdict, and this tab lists skip rows #}
         {# when the page is loaded as ?show=skipped. #}
         <button class="btn" hx-post="{{ '/override/' ~ j['id'] if j['verdict'] == 'skip' else '/apply/' ~ j['id'] }}"
-                title="Draft this job now. Review it in the status card above.">Apply</button>
+                title="{{ 'Track this skipped job: the agent fills the form as a draft only.' if j['verdict'] == 'skip' else "Apply now: the agent fills the form; approving its summary in the job's chat submits it." }}">Apply</button>
         {% endif %}
         <button hx-post="/dismiss/{{ j['id'] }}" hx-swap="outerHTML">Dismiss</button>
         {% endcall %}
@@ -176,7 +176,7 @@
       <td>
         {% call action_cell(j) %}
         <button hx-post="/override/{{ j['id'] }}" hx-swap="outerHTML"
-                title="Records an override of the gate's skip, and tracks it. Submission is manual.">Track anyway</button>
+                title="Records an override of the gate's skip and tracks it. Draft only &mdash; never submitted.">Track anyway</button>
         {% endcall %}
       </td>
     </tr>

@@ -18,7 +18,7 @@ export function ConfirmCard({ prompt, onAnswered, mode: runMode, canSubmit }: {
   onAnswered: () => void
   /** The run's mode (manual/auto), shown as the header badge. */
   mode?: string | null
-  /** SUBMISSION_IMPLEMENTED: false means approving saves a draft. */
+  /** This run's apply_checkpoint.can_submit: true means approving submits. */
   canSubmit?: boolean
 }) {
   const p = prompt.payload as unknown as ConfirmPayload
@@ -48,10 +48,15 @@ export function ConfirmCard({ prompt, onAnswered, mode: runMode, canSubmit }: {
         </span>
         <span className="ccard__head-r">
           {runMode && <span className="mono ccard__mode">{runMode}</span>}
-          {!canSubmit && (
+          {canSubmit ? (
+            <span className="b am">
+              <Icon d={P.alert} size={11} />
+              Approving submits the application
+            </span>
+          ) : (
             <span className="b sl">
               <Icon d={P.shield} size={11} />
-              Submission off — approving saves a draft
+              Draft only — approving saves a draft
             </span>
           )}
         </span>
@@ -111,7 +116,9 @@ export function ConfirmCard({ prompt, onAnswered, mode: runMode, canSubmit }: {
         {mode === 'view' && (
           <div className="ccard__actions">
             <button className="btn pri" disabled={busy}
-                    onClick={() => send({ decision: 'approve' })}>Approve</button>
+                    onClick={() => send({ decision: 'approve' })}>
+              {canSubmit ? 'Approve and submit' : 'Approve'}
+            </button>
             <button className="btn" disabled={busy}
                     onClick={() => setMode('edit')}>Change an answer</button>
             <button className="btn ghost rose-text" disabled={busy}

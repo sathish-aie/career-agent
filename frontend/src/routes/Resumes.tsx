@@ -290,7 +290,7 @@ export function Resumes() {
           <span className="vch__title">
             <span className="ct">Tailored versions</span>
             <span className="mono vrow__dim">{versions.length}</span>
-            <span className="vch__note">· one per job, reused on Redo draft and Continue</span>
+            <span className="vch__note">· one per job, reused on Apply again and Continue</span>
           </span>
           {versions.length > 0 && (
             <label className="vfilter">

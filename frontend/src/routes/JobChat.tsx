@@ -38,7 +38,7 @@ export function ChatRedirect() {
 export function JobChat() {
   const hub = useOutletContext<HubContext>()
   const { d, actions } = hub
-  const { toast, run } = useShell()
+  const { toast } = useShell()
   const nav = useLocation()
 
   // JD1 never creates a conversation (it is a plain lookup), so a job that
@@ -111,7 +111,7 @@ export function JobChat() {
   const card = (p: OpenPrompt) =>
     p.kind === 'confirm'
       ? <ConfirmCard key={p.id} prompt={p} onAnswered={reload} mode={d.checkpoint?.mode}
-                     canSubmit={run?.submission_implemented ?? false} />
+                     canSubmit={!!d.checkpoint?.can_submit} />
       : <AskCard key={p.id} prompt={p} onAnswered={reload} />
 
   return (

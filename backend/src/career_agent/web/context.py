@@ -214,7 +214,8 @@ def job_detail_context(conn: sqlite3.Connection, job_id: int,
 
     checkpoint = None
     cp = conn.execute(
-        "SELECT status, step, mode, model, resume_count, form_url, updated_at, notes"
+        "SELECT status, step, mode, model, resume_count, form_url, updated_at, notes,"
+        " can_submit"
         "  FROM apply_checkpoint WHERE job_id = ?", (job_id,)).fetchone()
     if cp:
         # `model` is what the job chat's picker locks to while the session
@@ -222,6 +223,8 @@ def job_detail_context(conn: sqlite3.Connection, job_id: int,
         checkpoint = {k: cp[k] for k in ("status", "step", "mode", "model", "resume_count",
                                           "form_url", "updated_at")}
         checkpoint["max_resumes"] = ats_apply.MAX_RESUMES
+        # This session's own permission (not the global switch): what Approve does.
+        checkpoint["can_submit"] = cp["can_submit"] == 1
         # A count only: the notes themselves stay with the agent's session.
         checkpoint["notes_count"] = len(json.loads(cp["notes"] or "[]"))
 

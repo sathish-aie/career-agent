@@ -2606,6 +2606,20 @@ def test_job_detail_checkpoint_carries_the_pinned_model(client):
     assert d["checkpoint"]["model"] == "claude-opus-5"
 
 
+
+@pytest.mark.parametrize("stored,shown", [(True, True), (False, False), (None, False)])
+def test_job_detail_checkpoint_says_whether_approving_submits(client, stored, shown):
+    """The review card's badge and button follow this session's own
+    permission, not the global switch: a worker or Track-anyway run drafts."""
+    conn = db.connect(web.DB_PATH)
+    from career_agent.apply import checkpoint
+    checkpoint.start(conn, 1, "s-1", "n-1", mode="manual", can_submit=stored)
+
+    d = client.get("/api/jobs/1").json()
+
+    assert d["checkpoint"]["can_submit"] is shown
+
+
 # --- RS1: the Resumes page's payload (job link, prompt version, citations) ---
 
 def _api_upload(client, path, filename=None):
