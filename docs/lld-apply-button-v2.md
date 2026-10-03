@@ -404,11 +404,15 @@ card, which pretty-prints the JSON (verify rendering in the plan; no schema chan
   tailored résumé and may click Save/Next on the employer's ATS. Account creation and
   Terms acceptance need an `approve_account` card since `bc11532` (before it, job 1639
   registered an account unasked).
-- The Playwright MCP server can navigate to `file://` URLs and upload arbitrary
-  absolute host paths, so it can reach `backend/.env` and `candidate_profile.toml`
-  regardless of the `--tools` restriction. `@playwright/mcp`'s
+- The Playwright MCP server can still navigate to `file://` URLs, so a snapshot of
+  `file:///.../backend/.env` or `candidate_profile.toml` would put their contents in
+  the agent's context regardless of the `--tools` restriction. `@playwright/mcp`'s
   `--allowed-origins`/`--blocked-origins` flags exist but its own `--help` states they
-  do not serve as a security boundary, so they aren't a reliable fix.
+  do not serve as a security boundary, so they aren't a reliable fix. Upload is no
+  longer open: since 2026-10-02 `browser_file_upload` accepts only paths inside the
+  server's `--output-dir`, which `run_session` sets to this job's staging dir
+  (`WORK_DIR/job<id>`, holding only the staged résumé), or its cwd (the wiped
+  `session` dir).
 
 To be revisited before any unattended use.
 

@@ -16,8 +16,11 @@ Evidence lines cite file:line, commit hashes, transcript paths, or captured comm
 | candidate_profile.toml | loads (1 work-history entry, 0 education entries) |
 | master.docx markers | `<<SUMMARY>>` ×1, `<<PROJECT_BULLET>>` ×1 |
 | DB backup (pre-migration) | `backend/data/backups/career_20261002_181646.db` (online backup, integrity ok, 2045 jobs, 20 applications) + raw copies of `.db`, `-wal` (41,232 B, unflushed since 2026-09-14), `-shm` |
-| chrome-profile | pending (section 2) |
-| server / migration / stale park | pending (section 2) |
+| chrome-profile | the old clone (5.1 GB, `Login Data` in `Default`, `Profile 1` and `Profile 3`) was deleted at 18:50; Chrome could not be closed for a re-clone, so an empty `data/chrome-profile/Default` was created and `ensure_profile` reuses it untouched. After the runs its `Login Data` files are Chrome's own, `logins` table 0 rows |
+| server | `python -m career_agent.run serve` from `backend/` in a detached window with console capture (`data/serve_<ts>.log`, UTF-16), `CLAUDECODE`/`CLAUDE_CODE_ENTRYPOINT` removed; restarted on each fix commit (18:26, 21:58, 23:03, 23:32, 00:02) |
+| first-boot migration | `init_schema` added `apply_checkpoint.model`/`notes`, `job.dismissed_at`, `setting.apply_model` (= `claude-sonnet-5`); `/api/run/status` reads the real DB (the stale park was visible) |
+| stale park | `run_state.apply` was `idle / auto / current_job_id 1037` (a leftover from 2026-08-26) and refused every Apply; `POST /api/run/stop` → `stopped`, `current_job_id NULL`. The mode stayed `auto` until the review: Start is the only setter and the Applications page pre-selects the stored mode, so the row was set to `manual` by a one-row write after the live checks |
+| frontend | not started (the user chose backend only); cards were answered through the API |
 
 ## 1. Audit
 
@@ -149,6 +152,7 @@ Probes: $0.0566 (4 haiku calls). Gate calls: 2 (Databricks, Coinbase; not priced
 - The hard filter accepts any "Remote" location, including "Remote - USA" (A5 side finding).
 - The CLI prices a `--resume`d session as one session: the transcript footer of a resumed run may include the killed process's turns, and the killed process writes no transcript at all. Cost bookkeeping across a kill is therefore approximate.
 - A card left unanswered for 30 minutes ends the run as `answer_timeout` (resumable); the operator must stay within that window.
+- The resumed run's CONFIRM was approved without a second user gate because its 31 fields matched the card the user had already reviewed; that was acceptable only because `can_submit` was 0. Once the flag flips, every CONFIRM needs the human's own click.
 
 ## 7. Recommendation on SUBMISSION_IMPLEMENTED (the user decides)
 

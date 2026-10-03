@@ -63,7 +63,7 @@ Every submission carries an explainable decision record: why it qualified, what 
 
 **v1, v2, and v3 are all implemented** — discovery, the quality gate, a live dashboard, outcome tracking, per-role resume tailoring, and a real, agentic apply engine (one Claude Code session per job, driving a real Chrome). See [`docs/product-vision.md`](docs/product-vision.md) for the full vision this is building toward.
 
-**The portal is chat-first.** It opens on a Home chat, where you can say things like "find jobs", "what's my queue?" or "apply to #1639". Anything that spends credits or applies shows an Approve card first. Each job has its own chat. There the agent narrates its run, asks questions it can't answer as cards (answer once, and it remembers), shows a review card with every field before it would click Submit, and offers **Continue** after an interruption. The earlier pages (queue, résumés, settings) and the Memory, Logins and Profile panels open as drawers beside the chat. See [the chat-first spec](docs/superpowers/specs/2026-09-13-chat-first-agent-design.md).
+**The portal is chat-first.** It opens on a Home chat, where you can say things like "find jobs", "what's my queue?" or "apply to #1639". Anything that spends credits or applies shows an Approve card first. Each job has its own chat. There the agent narrates its run, asks questions it can't answer as cards (answer once, and it remembers), shows a review card with every field before it would click Submit, and offers **Continue** after an interruption. The earlier pages (queue, résumés, settings) and the Memory, Logins and Profile panels open as routes of their own. See [the chat-first spec](docs/superpowers/specs/2026-09-13-chat-first-agent-design.md).
 
 > **It does not submit applications yet.** The apply agent is built, but
 > `SUBMISSION_IMPLEMENTED` in `career_agent/apply/ats.py` ships `False` — nothing sends
@@ -233,7 +233,7 @@ holds its evidence (transcript path, DB rows, chat state or screenshot).
 
 | # | Check | Status |
 |---|---|---|
-| L1 | an end-to-end manual draft from the Apply button: an ASK card answered into the same session, a chat note riding the next answer, the CONFIRM card changed once then approved, `DRAFT_READY`, nothing submitted | passed 2026-10-02 (log §2 L1 + L2): the ASK path did not arise on either form; three bugs found and fixed on the way |
+| L1 | an end-to-end manual draft from the Apply button: an ASK card answered into the same session, a chat note riding the next answer, the CONFIRM card changed once then approved, `DRAFT_READY`, nothing submitted | passed 2026-10-02 (log §2 L1 + L2): the ASK path did not arise on either form; the first draft's outcome row was lost to a sweep race (fixed) and the `draft` outcome was recorded on L2's resumed run; three bugs found and fixed on the way |
 | L2 | kill/timeout recovery and a real `--resume`: backend killed on a card, the startup sweep marks the checkpoint resumable, Continue resumes the same session (not the fresh-session fallback) | passed 2026-10-03 (log §2 L2) |
 | L3 | the Home chat's "apply to #id": the Approve card starts exactly one run, a newer card supersedes an older one | passed 2026-10-02 (log §2 L3) |
 | L4 | a real backend fill, submit and clear on a sign-in or sign-up page (`secret_fill`), with the password in no transcript, message, snapshot or log | pending |
