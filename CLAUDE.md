@@ -6,7 +6,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Career Agent is a quality-gated AI job-search agent: it discovers roles, scores them
 against a "career brief" before anything is done with them, tailors a resume per role,
-and (gated behind a manual kill switch) submits the application. See
+and submits the application only when you start it with Apply and approve its review
+card. See
 [`README.md`](README.md) for the product framing,
 [`docs/superpowers/specs/2026-08-18-career-agent-v1-design.md`](docs/superpowers/specs/2026-08-18-career-agent-v1-design.md)
 for the original phased design, and
@@ -228,14 +229,24 @@ teaches the agent that in its own NOTES FROM THE HUMAN section.
 
 **Modes.** `mode` is `manual` (every CONFIRM waits for the human's DECISION) or `auto`
 (`_chat_events` approves the CONFIRM on the spot, the only approval not given through
-`answer_prompt`). `can_submit = SUBMISSION_IMPLEMENTED or run_agent is not None` decides
-what an approval means: click Submit and report `APPLIED`, or stop at `DRAFT_READY`.
-`SUBMISSION_IMPLEMENTED` still **ships `False`** and gates a real send for every source.
-Everything in this section has been verified only against stubs; don't flip the switch
-or claim live behaviour until every row of README's "Pending live checks" table (L1 draft +
-CONFIRM flows, L2 kill/timeout recovery + real `--resume`, L3 Home `apply_to`, L4 real
-`secret_fill`, L5 auto mode, L6 a prompt-injection page) is marked passed in
-`docs/superpowers/verification/` — each spends real credits, so ask first.
+`answer_prompt`). `can_submit` decides what an approval means: click Submit and report
+`APPLIED`, or stop at `DRAFT_READY`. It is per run and fail-closed:
+`(SUBMISSION_IMPLEMENTED and allowed) or run_agent is not None`, where `allowed` is
+`submit()`'s keyword-only `submit_allowed` and, on a resume, also the checkpoint's own
+`can_submit` bit, so a Continue never escalates a draft-only run. Only the job's Apply
+button (`api.api_apply`, `app.apply`) and Continue (`actions._resume_run`) pass
+`submit_allowed`. The worker (Start/Resume in either mode, and auto-resume), Track anyway
+and Home's `apply_to` card always draft, and no production caller injects `run_agent`
+(a test pins both). `SUBMISSION_IMPLEMENTED` is **`True` since 2026-10-03**, by the
+user's decision
+([design](docs/superpowers/specs/2026-10-03-submit-on-explicit-apply-design.md));
+setting it back to `False` makes every run draft. A submitting run is always manual:
+Apply, the agent fills, the review card, and the human's **Approve and submit**.
+`submit()` re-checks the daily cap inside `_agent_lock` (`store.submitted_today`), since
+two Apply clicks both pass `worker.guard` first. L1–L3 of README's "Pending live checks"
+passed live as drafts only; no live submit, L4 (`secret_fill`), L5 (auto mode) or L6
+(a prompt-injection page) has run. Each spends real credits, so ask first, and the first
+live Apply + approve is a real application.
 
 **Cards.** Humans answer cards in the job chat through `actions.answer_prompt`. It
 refuses unless the job's run is live and waiting, the card is newer than the run's
@@ -261,10 +272,21 @@ claimed jobs.
 **Outcomes** (`_record_outcome`; every non-submit update is guarded on
 `status = 'in_flight'`):
 
-- `APPLIED` with `can_submit` becomes `submitted`. If the latest CONFIRM wasn't approved,
-  the row is flagged `submitted_without_decision`.
+- `APPLIED` with `can_submit` becomes `submitted` (with `submitted_at`, a `submitted`
+  event and the evidence JSON in `application.confirmation`) **only when
+  `result.submit_check` is verified**, never on the agent's word. `_live_run_agent`
+  anchors the form's frame URLs at each CONFIRM (`confirmation.watch`) and, after
+  `APPLIED` and before Chrome is cleaned up, reads the page over CDP
+  (`confirmation.check`, bounded by `TIMEOUT_S`): a fixed thank-you marker on the form's
+  host, and the URL changed or the form gone. Page text is never stored. Unverified, it
+  is `held_unknown` (`submit_unconfirmed`). If the latest CONFIRM wasn't approved, a
+  verified row is flagged `submitted_without_decision`.
+- With `can_submit`, once any approve went out, every other end (`DRAFT_READY`, CAPTCHA,
+  NEEDS_ANSWER, any `FAILED:*` such as `submit_not_found`, `validation_error` or
+  `submit_unconfirmed`) becomes `held_unknown` with that reason. Submit may have been
+  clicked, so it is never a draft, a delete or a requeue.
 - `APPLIED` without `can_submit` becomes `held_unknown` (`applied_during_draft`).
-- `DRAFT_READY` becomes `draft`. CAPTCHA and NEEDS_ANSWER leave no row.
+- Otherwise `DRAFT_READY` becomes `draft`, and CAPTCHA and NEEDS_ANSWER leave no row.
 - `PERMANENT_REASONS`, including a human `cancelled`, become `failed_permanent`.
 - The unknown-state reasons (`agent_error`, `timeout`, `no_result_line`,
   `unrecognized_result`), and an `answer_timeout` after an approve, become `held_unknown`

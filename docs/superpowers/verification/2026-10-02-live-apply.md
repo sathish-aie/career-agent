@@ -168,3 +168,11 @@ Probes: $0.0566 (4 haiku calls). Gate calls: 2 (Databricks, Coinbase; not priced
 | Daily cap counts `submitted` only; attempts semantics understood | `worker.py:116-119` | understood; nothing counts toward the cap until the flag flips |
 | Rollback plan | flag back to False; `held_unknown` adjudication | available |
 | Cost per draft understood | §5 | $1.3–$13.6 per form before bug 4; $7.3 (resumed session) after; budget $3–8 per form with clicks working |
+
+**Addendum, 2026-10-03.** The user chose to enable submission for an explicit Apply only,
+against this section's recommendation. `SUBMISSION_IMPLEMENTED` is `True`; only a job's
+Apply button and Continue of such a run can send, after the human's approve, and
+`submitted` needs the backend's own read of the confirmation page
+([design](../specs/2026-10-03-submit-on-explicit-apply-design.md)). The worker, Track
+anyway and Home's card stay draft-only. L4–L6 are still not run, and no live submit has
+run: the first one is a real application.

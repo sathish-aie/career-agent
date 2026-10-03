@@ -65,15 +65,18 @@ Every submission carries an explainable decision record: why it qualified, what 
 
 **The portal is chat-first.** It opens on a Home chat, where you can say things like "find jobs", "what's my queue?" or "apply to #1639". Anything that spends credits or applies shows an Approve card first. Each job has its own chat. There the agent narrates its run, asks questions it can't answer as cards (answer once, and it remembers), shows a review card with every field before it would click Submit, and offers **Continue** after an interruption. The earlier pages (queue, résumés, settings) and the Memory, Logins and Profile panels open as routes of their own. See [the chat-first spec](docs/superpowers/specs/2026-09-13-chat-first-agent-design.md).
 
-> **It does not submit applications yet.** The apply agent is built, but
-> `SUBMISSION_IMPLEMENTED` in `career_agent/apply/ats.py` ships `False` — nothing sends
-> for real until that's flipped by hand, after manually verifying it against a
-> real live posting (see "Real application submission (v3)" below). This is a deliberate
-> departure from the phase gate in the table below, which called for outcome data proving
-> tailored applications convert before auto-submission was even built; that evidence gate
-> was superseded by building the agent now and keeping the manual flag as the actual
-> trust boundary. The flag gates every source alike — there is no more per-source
-> refusal. Naukri submission is not planned at any version — it is a discovery source
+> **It submits only what you start with Apply, after you approve it.** Since 2026-10-03
+> `SUBMISSION_IMPLEMENTED` in `career_agent/apply/ats.py` is `True`, but a run may send
+> only when you start it with a job's **Apply** button, or **Continue** such a run. The
+> agent fills the form and shows the review card, and clicks Submit only on your
+> **Approve and submit**. The application is recorded as submitted only after the backend
+> sees the employer's confirmation page itself. The queue worker, **Track anyway** and the
+> Home chat's "apply to #id" stay draft-only (see "Real application submission (v3)"
+> below). This is a deliberate departure from the phase gate in the table below, which
+> called for outcome data proving tailored applications convert before auto-submission
+> was even built; that evidence gate was superseded by building the agent now and keeping
+> your explicit Apply and approval as the actual trust boundary. The rule is the same for
+> every source. Naukri submission is not planned at any version — it is a discovery source
 > only.
 
 ## Running it
@@ -163,9 +166,10 @@ Open [http://localhost:5173](http://localhost:5173). It proxies `/api/*` and fil
 ## Real application submission (v3)
 
 `career_agent/apply/ats.py` drives a real agentic apply engine — one Claude Code session
-per job, filling the form in a real Chrome over CDP — but `SUBMISSION_IMPLEMENTED` ships
-`False` — nothing sends for real until you flip that constant by hand, after you've
-verified it against real postings.
+per job, filling the form in a real Chrome over CDP. Since 2026-10-03
+`SUBMISSION_IMPLEMENTED` is `True`, and only a job's **Apply** button (and **Continue** of
+such a run) can send. See the
+[submit-on-explicit-Apply design](docs/superpowers/specs/2026-10-03-submit-on-explicit-apply-design.md).
 
 Setup:
 
@@ -178,12 +182,21 @@ Setup:
    edit them in the Profile panel.
 3. Set `CREDENTIAL_KEY` in `.env` (see First-time setup). The agent needs it whenever a
    site requires an account.
-4. With Chrome fully closed, run a few manual-mode applications against real postings first — the first draft clones your existing Chrome profile
-   (cookies, sessions) into an isolated worker profile, which needs Chrome not running.
-   With the flag off this is safe: the real agent fills the form and shows the review
-   card with exactly what it would send, then stops at a draft. No real application goes
-   out.
-5. Only once you trust the drafts, flip `SUBMISSION_IMPLEMENTED = True`.
+4. With Chrome fully closed, rehearse on a few real postings first with the Home chat's
+   "apply to #id" (or **Track anyway** on a skipped job). Those runs are draft-only: the
+   real agent fills the form and shows the review card with exactly what it would send,
+   then stops at a draft. The first run clones your existing Chrome profile (cookies,
+   sessions) into an isolated worker profile, which needs Chrome not running.
+5. **Apply is real.** On a run started with a job's Apply, the review card says
+   "Approving submits the application" and its button reads **Approve and submit**.
+   Approving makes the agent click the form's final submit control once. The backend
+   then reads the employer's page itself, and only a confirmation page on the form's own
+   host records the application as submitted. Anything less (no confirmation page, a
+   validation error, a CAPTCHA after the click) is held as "may already have submitted".
+   Check the employer's site or your email, then use **It was submitted** or **Not
+   submitted — clear hold…**. A held job is never retried on its own.
+6. To turn real sends off, set `SUBMISSION_IMPLEMENTED = False` and restart the backend.
+   Every run then stops at a draft.
 
 Questions the agent can't answer from your profile or memory show up as cards in the
 job's chat. The session waits while you answer, and the answer reaches that same
@@ -223,11 +236,22 @@ closed from outside the page, and have been accepted:
   and the Home-chat intent router runs from `backend/`. Playwright can navigate `file://`,
   and drafts can upload the résumé and click Save on the employer's site (see
   [LLD §6](docs/lld-apply-button-v2.md)).
+- A submission is recognised by fixed English phrases ("thank you for applying",
+  "your application has been submitted", ...; `apply/confirmation.py`'s `MARKERS`). An
+  employer that words its confirmation differently leaves a real submission held as
+  `submit_unconfirmed` until you adjudicate it. Add its wording to `MARKERS` when you see
+  one.
+- Reading an embedded form's iframe (a Greenhouse embed) over CDP is supported by
+  Playwright but has not been run live. If it fails, every embedded-form submit is held.
+- A job-description tab on the form's own host that happens to say "thank you for
+  applying" and shows at most two inputs could pass the check falsely.
+- A held submission does not count toward the daily cap.
 
 ### Pending live checks
 
-Everything in the apply path was verified against stubs only. Each check below spends
-real credits and drives a real Chrome, so ask before running one. Results live in
+Each check below spends real credits and drives a real Chrome, so ask before running
+one. Real submission was turned on 2026-10-03 by the user's decision with L4–L6 still
+pending (log §7), so L7, the first live submit, is a real application. Results live in
 `docs/superpowers/verification/<date>-live-apply.md`; a check is done only when that log
 holds its evidence (transcript path, DB rows, chat state or screenshot).
 
@@ -239,6 +263,7 @@ holds its evidence (transcript path, DB rows, chat state or screenshot).
 | L4 | a real backend fill, submit and clear on a sign-in or sign-up page (`secret_fill`), with the password in no transcript, message, snapshot or log | pending |
 | L5 | auto mode: a CONFIRM auto-approved through to `DRAFT_READY` | pending |
 | L6 | a prompt-injection page: a printed `RESULT:APPLIED` without the nonce is ignored | pending |
+| L7 | a real submit from a job's Apply: **Approve and submit**, the confirmation check verifies, and the row is `submitted` with `submitted_at` and its `confirmation` evidence | pending (a real application) |
 
 ### Roadmap
 
@@ -255,9 +280,10 @@ point, not decoration.
 
 v3's code shipped ahead of its own gate above: the apply engine was built and
 tested before outcome data existed to prove tailored applications convert.
-`SUBMISSION_IMPLEMENTED` is the actual gate now — a manual switch flipped only after
-verifying it against a real posting, not the outcome-evidence condition
-originally specified for this phase.
+The actual gate now is your explicit Apply plus your approval of the review card.
+`SUBMISSION_IMPLEMENTED` was turned on 2026-10-03 after live drafts on real postings, and
+only an Apply run can send. That replaced the outcome-evidence condition originally
+specified for this phase.
 
 Deferred and unscheduled: recruiter-message handling and calendar; warm-path and
 referral detection; **Naukri submission — no Actor exists and no connector is planned,

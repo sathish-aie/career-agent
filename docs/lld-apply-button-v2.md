@@ -35,7 +35,8 @@ route to it; failures are classified, not fatal.
   `RESULT:NEEDS_ANSWER` instead) — but that is an instruction the model follows, not a
   guarantee the code makes. The reviewed answers are the floor, not a ceiling.
 - `SUBMISSION_IMPLEMENTED = False` as the hand-flipped outermost kill switch — now gating
-  real sends for **all** sources.
+  real sends for **all** sources. (Since 2026-10-03 it is `True`, and a per-run
+  `submit_allowed` decides; see §5's note.)
 - The `application` state machine, its CHECK constraint, the `one_live_application_per_job`
   partial unique index, `MAX_ATTEMPTS`, `sweep_stale_in_flight`, daily cap, pause.
 - `apply_tick`'s shape: pick → guard → tailor → draft → (manual: stop for review | auto: send).
@@ -263,13 +264,18 @@ gap — a draft review can take hours).
 
 > **Note (chat-first, 2026-09-14): the signature below is historical.** The current one is
 > `submit(conn, job_id, mode, brief, profile, resume_version=None, run_agent=None,
-> conn_factory=None, resume=False)`.
+> conn_factory=None, resume=False, *, submit_allowed=False)`.
 >
 > - **`mode` replaces `dry_run`.** `"manual"`: every CONFIRM waits for a human DECISION in
 >   the job chat. `"auto"`: the CONFIRM is approved on the spot.
-> - **`can_submit` decides what an approval means.** `can_submit = SUBMISSION_IMPLEMENTED
->   or run_agent is not None`. It either clicks Submit (`APPLIED`) or stops at
->   `DRAFT_READY`. One session per job in both modes: there is no separate draft run
+> - **`can_submit` decides what an approval means.** Since 2026-10-03 it is per run:
+>   `(SUBMISSION_IMPLEMENTED and allowed) or run_agent is not None`, where `allowed` is the
+>   keyword-only `submit_allowed` (only the Apply button and Continue pass it) and, on a
+>   resume, also the checkpoint's own `can_submit` bit. It either clicks Submit
+>   (`APPLIED`, recorded `submitted` only once `apply/confirmation.py` has read the
+>   employer's confirmation page over CDP) or stops at `DRAFT_READY`. After an approve,
+>   every other end is `held_unknown`. See the
+>   [design](superpowers/specs/2026-10-03-submit-on-explicit-apply-design.md). One session per job in both modes: there is no separate draft run
 >   followed by a send run, and no draft pinning.
 > - **`conn_factory`** narrates the run into the job's conversation.
 > - **`resume=True`** continues a `resumable` `apply_checkpoint` with `--resume` on the same
@@ -377,9 +383,12 @@ card, which pretty-prints the JSON (verify rendering in the plan; no schema chan
 
 ---
 
-## 6. Safety model (four layers, defense in depth)
+## 6. Safety model (five layers, defense in depth)
 
-1. **Kill switch** — `SUBMISSION_IMPLEMENTED = False` refuses every real send, all sources.
+1. **Kill switch and per-run permission** — `SUBMISSION_IMPLEMENTED` (`True` since
+   2026-10-03; `False` makes every run draft) and `submit()`'s keyword-only
+   `submit_allowed`, which only the job's Apply button and Continue pass. The worker,
+   Track anyway and Home's `apply_to` card always draft, and a Continue never escalates.
 2. **State machine** — draft-before-send in manual mode, `one_live_application_per_job`,
    `sweep_stale_in_flight` (an agent crash mid-send leaves `held_unknown`, blocking a
    double-send, exactly as today), daily cap, pause.
@@ -387,6 +396,9 @@ card, which pretty-prints the JSON (verify rendering in the plan; no schema chan
    from profile/qa_bank.
 4. **Browser flags** — `--deny-permission-prompts`, fake media UI, notifications off: the
    permission prompts the prompt forbids can't even appear.
+5. **Confirmation check** — `submitted` is recorded only when the backend itself reads the
+   employer's confirmation page over CDP (`apply/confirmation.py`), never on the agent's
+   `RESULT:APPLIED` alone. Every other end after an approve is `held_unknown`.
 
 **Known residuals (accepted risk for the P0 trial, not closed by the above):**
 
@@ -400,8 +412,8 @@ card, which pretty-prints the JSON (verify rendering in the plan; no schema chan
   `~/.claude/skills` directory (passive; no Skill tool is offered). The Home-chat intent
   router gets the same flags but runs from `backend/`, where a project settings file
   would apply.
-- A draft is not side-effect free: with the kill switch off the agent still uploads the
-  tailored résumé and may click Save/Next on the employer's ATS. Account creation and
+- A draft is not side-effect free: a draft-only run still uploads the tailored résumé
+  and may click Save/Next on the employer's ATS. Account creation and
   Terms acceptance need an `approve_account` card since `bc11532` (before it, job 1639
   registered an account unasked).
 - The Playwright MCP server can still navigate to `file://` URLs, so a snapshot of

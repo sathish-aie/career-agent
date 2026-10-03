@@ -255,6 +255,11 @@ flow already in `_default_filler`.
 
 ## Rollout: build now, trust it later
 
+> **Superseded 2026-10-03:** `SUBMISSION_IMPLEMENTED` is now `True`, and only an explicit
+> Apply (and its Continue) may submit, after the human's approve and a backend check of
+> the employer's confirmation page. See
+> [the submit-on-explicit-Apply design](2026-10-03-submit-on-explicit-apply-design.md).
+
 `SUBMISSION_IMPLEMENTED` ships `False`. The real filler exists and is fully
 tested, but `auto` mode's real-send step still hits the same categorical
 refusal it does today until this flag is flipped by hand — no new config or
