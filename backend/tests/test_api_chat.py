@@ -1138,3 +1138,144 @@ async def test_a_job_card_answer_echo_is_tagged_with_its_prompt(conn, runs):
     assert r["ok"]
     echo = [m for m in chat.messages_after(conn, cid) if m["role"] == "user"][-1]
     assert echo["payload"] == {"prompt_id": pid, "decision": "30 days"}
+
+
+# -- a pasted LinkedIn job link ---------------------------------------------------
+
+from career_agent import gate                              # noqa: E402
+from career_agent.models import Job                        # noqa: E402
+from career_agent.sources import linkedin as linkedin_mod  # noqa: E402
+
+# "pan" in the slug is LinkedIn's wording ("PAN India"), not a secret.
+LINK = "https://in.linkedin.com/jobs/view/sales-lead-pan-india-at-initech-4451904611"
+
+
+def _posting(apply="company_site"):
+    return linkedin_mod.Posting(
+        Job(source="linkedin", external_id="4451904611", company="Initech", title="Sales Lead",
+            location="Chennai", url="https://www.linkedin.com/jobs/view/4451904611",
+            description="Sell things."), apply)
+
+
+@pytest.fixture
+def pasted(monkeypatch):
+    """The two calls a pasted link makes off the box, faked: LinkedIn's page
+    and the scoring model."""
+    state = {"posting": _posting(), "fetched": [], "scored": []}
+
+    def fetch(posting_id):
+        state["fetched"].append(posting_id)
+        return state["posting"]
+
+    async def score_job(conn, job_id, brief_path):
+        state["scored"].append(job_id)
+        conn.execute("INSERT INTO assessment (job_id, stage, weighted_score, verdict, rationale,"
+                     " model, prompt_version) VALUES (?, 'scored', 71.4, 'hold', 'ok', 'm', 'gate-v1')",
+                     (job_id,))
+        conn.commit()
+        return conn.execute("SELECT verdict, weighted_score FROM assessment WHERE job_id = ?"
+                            " ORDER BY id DESC LIMIT 1", (job_id,)).fetchone()
+    monkeypatch.setattr(actions.linkedin, "fetch", fetch)
+    monkeypatch.setattr(actions.worker, "score_job", score_job)
+    return state
+
+
+def _no_router(prompt, schema):
+    pytest.fail("a pasted link went to the classifier")
+
+
+async def _paste(conn, tmp_path, text=LINK):
+    tasks = set()
+    r = await _say(conn, text, _no_router, tmp_path, tasks)
+    await asyncio.gather(*tasks)
+    return r
+
+
+async def test_a_pasted_link_adds_and_scores_the_job_then_asks_first(conn, tmp_path, pasted):
+    r = await _paste(conn, tmp_path, f"apply to this one {LINK}")
+
+    assert r["ok"] and pasted["fetched"] == ["4451904611"] and pasted["scored"] == [3]
+    job = conn.execute("SELECT source, external_id, company, url FROM job WHERE id = 3").fetchone()
+    assert tuple(job) == ("linkedin", "4451904611", "Initech",
+                          "https://www.linkedin.com/jobs/view/4451904611")
+    payload = json.loads(_home_prompt(conn)["payload"])
+    assert (payload["origin"], payload["action"], payload["args"]) == ("home", "apply_link", {"job_id": 3})
+    assert payload["question"] == "Apply to #3: Sales Lead at Initech? Gate: hold (71)."
+    assert [m["role"] for m in _home(conn)] == ["user", "agent", "prompt"]
+    assert conn.execute("SELECT COUNT(*) FROM application").fetchone()[0] == 0    # nothing started
+
+
+async def test_a_link_already_in_the_job_list_reuses_that_job(conn, tmp_path, pasted):
+    conn.execute("UPDATE job SET source = 'linkedin', external_id = '4451904611' WHERE id = 1")
+    conn.commit()
+
+    await _paste(conn, tmp_path)
+
+    payload = json.loads(_home_prompt(conn)["payload"])
+    assert payload["args"] == {"job_id": 1} and "AI Engineer at Acme" in payload["question"]
+    assert conn.execute("SELECT COUNT(*) FROM job").fetchone()[0] == 2
+
+
+@pytest.mark.parametrize("posting, says", [
+    (None, "couldn't read that posting"),
+    (_posting("closed"), "no longer accepting applications"),
+    (_posting("unknown"), "Easy Apply"),
+])
+async def test_a_link_the_agent_cannot_apply_through_gets_a_reply_and_spends_nothing(
+        conn, tmp_path, pasted, posting, says):
+    pasted["posting"] = posting
+
+    await _paste(conn, tmp_path)
+
+    assert says in _home(conn)[-1]["content"] and _home_prompt(conn) is None
+    assert pasted["scored"] == []
+    assert conn.execute("SELECT COUNT(*) FROM job").fetchone()[0] == 2    # not added either
+
+
+async def test_a_pasted_link_for_a_job_already_sent_is_refused_without_a_card(conn, tmp_path, pasted):
+    conn.execute("UPDATE job SET source = 'linkedin', external_id = '4451904611' WHERE id = 1")
+    conn.execute("INSERT INTO application (job_id, resume_version, status, submitted_at)"
+                 " VALUES (1, 'v', 'submitted', datetime('now', '-3 days'))")
+    conn.commit()
+
+    await _paste(conn, tmp_path)
+
+    last = _home(conn)[-1]["content"]
+    assert "#1" in last and "submitted" in last and _home_prompt(conn) is None
+
+
+async def test_a_pasted_link_reports_why_scoring_refused(conn, tmp_path, pasted, monkeypatch):
+    async def too_few_facts(conn, job_id, brief_path):
+        raise gate.InsufficientFacts("3 facts recorded, need at least 10.")
+    monkeypatch.setattr(actions.worker, "score_job", too_few_facts)
+
+    await _paste(conn, tmp_path)
+
+    assert "need at least 10" in _home(conn)[-1]["content"] and _home_prompt(conn) is None
+
+
+async def test_a_secret_next_to_a_pasted_link_is_still_refused(conn, tmp_path, pasted):
+    r = await _paste(conn, tmp_path, f"my password is hunter2 {LINK}")
+
+    assert r["code"] == 422 and _home(conn) == [] and pasted["fetched"] == []
+
+
+@pytest.mark.parametrize("job_id, event", [(1, "human_applied"), (2, "human_override")])
+async def test_approving_a_pasted_link_may_submit_and_overrides_a_gate_skip(
+        conn, runs, tmp_path, monkeypatch, job_id, event):
+    """The human chose this job themselves: like the job's own Apply / Apply
+    anyway, the run may submit -- after the review card's approve."""
+    calls = []
+
+    async def fake(conn, job_id, allow_skip, event, brief_path, candidate_profile_path,
+                   conn_factory=None, **kw):
+        calls.append((job_id, allow_skip, event, kw))
+        return {"ok": True, "message": "Applied"}
+    monkeypatch.setattr(actions, "do_apply", fake)
+    tasks = set()
+
+    r = _answer(conn, _open_home(conn, action="apply_link", args={"job_id": job_id}), "approve",
+                tmp_path, tasks)
+    await asyncio.gather(*tasks)
+
+    assert r["ok"] and calls == [(job_id, True, event, {"submit_allowed": True})]

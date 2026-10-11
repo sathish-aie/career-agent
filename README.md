@@ -68,7 +68,8 @@ Every submission carries an explainable decision record: why it qualified, what 
 > **It submits only what you start with Apply, after you approve it.** Since 2026-10-03
 > `SUBMISSION_IMPLEMENTED` in `career_agent/apply/ats.py` is `True`, but a run may send
 > only when you start it with a job's **Apply** button (**Apply anyway** on a job the
-> gate skipped), or **Continue** such a run. The
+> gate skipped), approve the Home card for a LinkedIn job link you pasted, or
+> **Continue** such a run. The
 > agent fills the form and shows the review card, and clicks Submit only on your
 > **Approve and submit**. The application is recorded as submitted only after the backend
 > sees the employer's confirmation page itself. The queue worker and the
@@ -188,7 +189,16 @@ Setup:
    real agent fills the form and shows the review card with exactly what it would send,
    then stops at a draft. The first run clones your existing Chrome profile (cookies,
    sessions) into an isolated worker profile, which needs Chrome not running.
-5. **Apply is real.** On a run started with a job's Apply or Apply anyway, the review card says
+5. **Paste a LinkedIn job link into Home** to apply to a job that is not in your list.
+   The backend reads LinkedIn's public posting page (no login, no Apify credits), adds
+   and scores the job, and asks first with a card. Approving starts a run that may
+   submit, exactly like the job's Apply button. Only postings that apply on the
+   employer's own site get a card: a closed posting, or one with no company-site link
+   (most likely Easy Apply), gets a reply and spends nothing. LinkedIn hides the
+   employer's link from signed-out visitors, so sign the agent's Chrome into LinkedIn
+   once (`chrome.exe --user-data-dir=<backend>/data/chrome-profile`), or the run ends
+   at the sign-in wall.
+6. **Apply is real.** On a run started with a job's Apply or Apply anyway, the review card says
    "Approving submits the application" and its button reads **Approve and submit**.
    Approving makes the agent click the form's final submit control once. The backend
    then reads the employer's page itself, and only a confirmation page on the form's own
@@ -196,7 +206,7 @@ Setup:
    validation error, a CAPTCHA after the click) is held as "may already have submitted".
    Check the employer's site or your email, then use **It was submitted** or **Not
    submitted — clear hold…**. A held job is never retried on its own.
-6. To turn real sends off, set `SUBMISSION_IMPLEMENTED = False` and restart the backend.
+7. To turn real sends off, set `SUBMISSION_IMPLEMENTED = False` and restart the backend.
    Every run then stops at a draft.
 
 Questions the agent can't answer from your profile or memory show up as cards in the

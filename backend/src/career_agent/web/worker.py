@@ -4,7 +4,7 @@ import logging
 import sqlite3
 from pathlib import Path
 
-from career_agent import chat
+from career_agent import chat, gate
 from career_agent import run as run_module
 from career_agent import store, tailor
 from career_agent.apply import agent as agent_mod
@@ -135,6 +135,27 @@ async def tailor_for_apply(conn: sqlite3.Connection, job_id: int,
     settings = store.get_settings(conn)
     ask = functools.partial(run_module._ask, model=settings["scoring_model"])
     return await tailor.ensure_tailored(conn, job_id, job, brief, ask)
+
+
+async def score_job(conn: sqlite3.Connection, job_id: int,
+                    brief_path: Path) -> sqlite3.Row:
+    """The job's latest assessment (verdict, weighted_score), scoring it first
+    if it has none: a job added from a pasted link has never been through the
+    pipeline, and guard() refuses an unscored one. One model call at most,
+    with the pipeline's own model and prompt."""
+    latest = ("SELECT verdict, weighted_score FROM assessment WHERE job_id = ?"
+              " ORDER BY id DESC LIMIT 1")
+    row = conn.execute(latest, (job_id,)).fetchone()
+    if row:
+        return row
+    run_module.verify_auth()
+    job = run_module._row_to_job(
+        conn.execute("SELECT * FROM job WHERE id = ?", (job_id,)).fetchone())
+    model = store.get_settings(conn)["scoring_model"]
+    verdict = await gate.score(job, load_brief(brief_path), store.facts(conn),
+                               functools.partial(run_module._ask, model=model))
+    store.save_assessment(conn, job_id, verdict, model, gate.PROMPT_VERSION)
+    return conn.execute(latest, (job_id,)).fetchone()
 
 
 async def apply_tick(conn: sqlite3.Connection, brief_path, profile_path,

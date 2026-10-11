@@ -19,7 +19,7 @@ from pathlib import Path
 import docx
 from pydantic import ValidationError
 
-from career_agent import chat, credentials, outcomes, store, tailor
+from career_agent import chat, credentials, gate, outcomes, store, tailor
 from career_agent.apply import agent as agent_mod
 from career_agent.apply import ats as ats_apply
 from career_agent.apply import checkpoint, secret_fill
@@ -27,6 +27,7 @@ from career_agent.config import (APPLY_MODELS, SCORING_MODELS, CandidateProfile,
                                  CareerBrief, load_brief, save_brief,
                                  save_candidate_profile)
 from career_agent.security import load_key
+from career_agent.sources import linkedin
 from career_agent.web import context, intent, pipeline, worker
 
 log = logging.getLogger(__name__)
@@ -105,8 +106,9 @@ async def do_apply(conn: sqlite3.Connection, job_id: int, allow_skip: bool,
     """The Applications page opens the job's chat before this returns, so a
     refusal is posted there too -- except the needs_answer park, whose card
     is already in the chat. `submit_allowed`: only a click on the job passes it
-    (Apply and Apply anyway: api_apply, api_override, app.apply, app.override);
-    Home's card drafts."""
+    (Apply and Apply anyway: api_apply, api_override, app.apply, app.override),
+    and Home's card for a link the human pasted (apply_link); Home's
+    "apply to #id" card drafts."""
     result = await _do_apply(conn, job_id, allow_skip, event, brief_path,
                              candidate_profile_path, conn_factory,
                              submit_allowed=submit_allowed)
@@ -564,6 +566,7 @@ def answer_prompt(conn: sqlite3.Connection, prompt_id: int, answer: dict,
 
 HELP_TEXT = ("I can find new jobs (\"find jobs\"), show your queue (\"what's my queue?\"),"
              " apply to a queued job (\"apply to #1639\" or \"apply to Acme\"),"
+             " apply to a LinkedIn job you paste the link of,"
              " pause, resume or stop the apply run, and tell you the status.")
 _ROUTER_DOWN = ("I couldn't work out what you meant — the command router may be unavailable"
                 " (is the claude CLI installed and signed in?). Say \"help\" to see the commands. ")
@@ -636,12 +639,51 @@ def _apply_to_reply(conn, job_ref: str | None) -> str | None:
             return f"I couldn't find a queued job matching \"{job_ref}\"."
         return ("That matches more than one job — which one? "
                 + "; ".join(f"#{m['id']} {m['company']} — {m['title']}" for m in matches))
-    job = conn.execute("SELECT company, title FROM job WHERE id = ?", (job_id,)).fetchone()
-    # The id first, scraped text clipped: a title like "(#12)" must not pass for another job.
-    clip = lambda s: s if len(s) <= 80 else s[:79] + "…"
-    _ask_home(conn, "apply_to", {"job_id": job_id},
-              f"Start applying to #{job_id}: {clip(job['title'])} at {clip(job['company'])}?")
+    _ask_home(conn, "apply_to", {"job_id": job_id}, f"Start applying to {_named(conn, job_id)}?")
     return None
+
+
+def _named(conn, job_id: int) -> str:
+    """"#12: Title at Company" for a card. The id first, scraped text clipped:
+    a title like "(#12)" must not pass for another job."""
+    job = conn.execute("SELECT company, title FROM job WHERE id = ?", (job_id,)).fetchone()
+    clip = lambda s: s if len(s) <= 80 else s[:79] + "…"
+    return f"#{job_id}: {clip(job['title'])} at {clip(job['company'])}"
+
+
+_NO_COMPANY_SITE = {
+    "closed": "is no longer accepting applications.",
+    "unknown": ("has no \"apply on company website\" link that I can see, so it is most likely"
+                " Easy Apply, which I don't do. Nothing was started."),
+}
+
+
+async def _home_paste(conn, posting_id: str, brief_path: Path) -> None:
+    """A LinkedIn job link pasted into Home: read the posting, add and score
+    the job, then ask before applying. Only a posting that applies on the
+    employer's own site gets a card, and nothing before the card spends more
+    than one scoring call. Never raises."""
+    try:
+        posting = await asyncio.to_thread(linkedin.fetch, posting_id)
+        if posting is None:
+            return _home_says(conn, "I couldn't read that posting — it may have been removed,"
+                                    " or LinkedIn didn't answer.")
+        if posting.apply != "company_site":
+            return _home_says(conn, f"{posting.job.title} at {posting.job.company}"
+                                    f" {_NO_COMPANY_SITE[posting.apply]}")
+        job_id = store.add_job(conn, posting.job)
+        scored = await worker.score_job(conn, job_id, brief_path)
+        denial = _apply_denial(conn, job_id, True, brief_path)
+        if denial:
+            return _home_says(conn, f"{_named(conn, job_id)} — apply refused: {denial}")
+        score = "" if scored["weighted_score"] is None else f" ({scored['weighted_score']:.0f})"
+        _ask_home(conn, "apply_link", {"job_id": job_id},
+                  f"Apply to {_named(conn, job_id)}? Gate: {scored['verdict']}{score}.")
+    except gate.InsufficientFacts as exc:
+        _home_says(conn, f"I can't score that job yet: {exc}")
+    except Exception:
+        log.exception("pasted link %s failed", posting_id)
+        _home_says(conn, "Looking up that posting failed — the details are in the server log.")
 
 
 async def home_message(conn: sqlite3.Connection, text: str, brief_path: Path, profile_path: Path,
@@ -650,11 +692,18 @@ async def home_message(conn: sqlite3.Connection, text: str, brief_path: Path, pr
     answer. Spend or submit intents only open an approve card; pause/resume/stop
     act directly (cheap, reversible). Refuses a secret exactly as job_message
     does -- a password is never stored and never reaches the classifier
-    subprocess. Never raises."""
-    if store._SECRET_QA_RE.search(text):
+    subprocess. A LinkedIn job link skips the classifier: _home_paste looks
+    the posting up in the background and opens its own card. Never raises."""
+    posting_id = linkedin.job_id(text)
+    # A link's slug is LinkedIn's wording ("...-pan-india-..."), not the user's secret.
+    if store._SECRET_QA_RE.search(linkedin.without_links(text) if posting_id else text):
         return _refuse(422, _SECRET)
     home = chat.home_conversation(conn)
     mid = chat.post_message(conn, home, "user", text)
+    if posting_id:
+        chat.post_message(conn, home, "agent", "Looking up that LinkedIn posting…")
+        _background(_home_paste(conn, posting_id, brief_path), tasks)
+        return {"ok": True, "message_id": mid}
     try:
         routed = await asyncio.to_thread(intent.route, text, runner=runner)
         name = routed["intent"]
@@ -722,7 +771,12 @@ def _home_find_jobs(conn, args: dict, *, conn_factory, db_path, brief_path, task
     return {"ok": True, "message": "Discovery started"}
 
 
-def _home_apply_to(conn, args: dict, *, brief_path, profile_path, conn_factory, tasks, **_) -> dict:
+def _home_apply_to(conn, args: dict, *, brief_path, profile_path, conn_factory, tasks,
+                   pasted: bool = False, **_) -> dict:
+    """`pasted`: the card is for a link the human pasted (apply_link). They
+    picked that job themselves, so it overrides a gate skip and its run may
+    submit -- after the review card's own approve, like the job's Apply and
+    Apply anyway buttons. The LLM-routed "apply to #id" card stays draft-only."""
     job_id = args.get("job_id")
     if type(job_id) is not int or not conn.execute("SELECT 1 FROM job WHERE id = ?",
                                                    (job_id,)).fetchone():
@@ -731,27 +785,36 @@ def _home_apply_to(conn, args: dict, *, brief_path, profile_path, conn_factory, 
         return _refuse(409, text)
     verdict = conn.execute("SELECT verdict FROM assessment WHERE job_id = ?"
                            " ORDER BY id DESC LIMIT 1", (job_id,)).fetchone()
-    if verdict and verdict["verdict"] == "skip":    # guard's own text points at a button Home lacks
+    skipped = bool(verdict and verdict["verdict"] == "skip")
+    if skipped and not pasted:    # guard's own text points at a button Home lacks
         text = "The gate skipped this one — open the job's chat or the Jobs panel to override."
         _home_says(conn, text)
         return _refuse(409, text)
     # A readable refusal now; do_apply re-runs every guard when it starts.
-    denial = _apply_denial(conn, job_id, False, brief_path)
+    denial = _apply_denial(conn, job_id, pasted, brief_path)
     if denial:
         _home_says(conn, f"Apply refused: {denial}")
         return _refuse(409, denial)
     cid = chat.conversation_for_job(conn, job_id)
     _home_says(conn, f"Started — follow along in the job's chat (#{job_id})",
                {"job_id": job_id, "conversation_id": cid})
-    _background(_home_apply_run(conn, job_id, brief_path, profile_path, conn_factory), tasks)
+    _background(_home_apply_run(conn, job_id, brief_path, profile_path, conn_factory,
+                                allow_skip=pasted, submit_allowed=pasted,
+                                event="human_override" if skipped else "human_applied"), tasks)
     return {"ok": True, "message": "Started", "job_id": job_id, "conversation_id": cid}
 
 
-async def _home_apply_run(conn, job_id: int, brief_path, profile_path, conn_factory) -> None:
+def _home_apply_link(conn, args: dict, **ctx) -> dict:
+    return _home_apply_to(conn, args, pasted=True, **ctx)
+
+
+async def _home_apply_run(conn, job_id: int, brief_path, profile_path, conn_factory, *,
+                          allow_skip: bool = False, event: str = "human_applied",
+                          submit_allowed: bool = False) -> None:
     try:
-        result = await do_apply(conn, job_id, allow_skip=False, event="human_applied",
+        result = await do_apply(conn, job_id, allow_skip=allow_skip, event=event,
                                 brief_path=brief_path, candidate_profile_path=profile_path,
-                                conn_factory=conn_factory)
+                                conn_factory=conn_factory, submit_allowed=submit_allowed)
         text = result["message"]
     except Exception:
         log.exception("home apply failed for job %s", job_id)
@@ -759,7 +822,8 @@ async def _home_apply_run(conn, job_id: int, brief_path, profile_path, conn_fact
     _home_says(conn, f"#{job_id}: {text}")
 
 
-HOME_ACTIONS = {"find_jobs": _home_find_jobs, "apply_to": _home_apply_to}
+HOME_ACTIONS = {"find_jobs": _home_find_jobs, "apply_to": _home_apply_to,
+                "apply_link": _home_apply_link}
 
 
 def _answer_home_prompt(conn, row, answer, **ctx) -> dict:

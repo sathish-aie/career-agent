@@ -39,7 +39,8 @@ PENDING: set[int] = set()
 
 # The global master switch. On, a run MAY submit -- only one whose caller
 # passes submit_allowed: the job's Apply and Apply-anyway buttons (api_apply,
-# api_override, app.apply, app.override) and a Continue of a session one of
+# api_override, app.apply, app.override), Home's card for a job link the human
+# pasted (actions._home_apply_link) and a Continue of a session one of
 # them started (apply_checkpoint.can_submit is the per-run bit; a resume never
 # escalates). The worker (Start/Resume, auto-resume) and Home's "apply to"
 # card always draft. Off, every run drafts. Turned on by the user's decision of 2026-10-03, see

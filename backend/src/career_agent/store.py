@@ -29,6 +29,19 @@ def submitted_today(conn, *, held: bool = False) -> int:
     return n
 
 
+def _insert_job(conn, job: Job) -> int:
+    return conn.execute(
+        "INSERT INTO job (fingerprint, source, external_id, company,"
+        " company_normalized, title, title_normalized, location,"
+        " is_remote, comp_min, comp_max, posted_at, url, description)"
+        " VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+        (normalize.fingerprint(job), job.source, job.external_id,
+         job.company, normalize.company(job.company), job.title,
+         normalize.title(job.title), job.location, int(job.is_remote),
+         job.comp_min, job.comp_max, job.posted_at, job.url,
+         job.description)).lastrowid
+
+
 def upsert_jobs(conn, jobs: list[Job], brief: CareerBrief) -> int:
     """Insert jobs that are new and fresh. Returns how many were inserted."""
     inserted = 0
@@ -36,21 +49,27 @@ def upsert_jobs(conn, jobs: list[Job], brief: CareerBrief) -> int:
         if normalize.is_stale(job, brief.staleness_days):
             continue
         try:
-            conn.execute(
-                "INSERT INTO job (fingerprint, source, external_id, company,"
-                " company_normalized, title, title_normalized, location,"
-                " is_remote, comp_min, comp_max, posted_at, url, description)"
-                " VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
-                (normalize.fingerprint(job), job.source, job.external_id,
-                 job.company, normalize.company(job.company), job.title,
-                 normalize.title(job.title), job.location, int(job.is_remote),
-                 job.comp_min, job.comp_max, job.posted_at, job.url,
-                 job.description))
+            _insert_job(conn, job)
             inserted += 1
         except sqlite3.IntegrityError:
             continue  # same role, already seen from another board
     conn.commit()
     return inserted
+
+
+def add_job(conn, job: Job) -> int:
+    """The id of one job the human picked (a pasted link), inserted unless it
+    is already known by its source id or as the same role from another board.
+    No staleness cut: that is discovery's rule (upsert_jobs), not theirs."""
+    row = (conn.execute("SELECT id FROM job WHERE source = ? AND external_id = ?",
+                        (job.source, job.external_id)).fetchone()
+           or conn.execute("SELECT id FROM job WHERE fingerprint = ?",
+                           (normalize.fingerprint(job),)).fetchone())
+    if row:
+        return row["id"]
+    job_id = _insert_job(conn, job)
+    conn.commit()
+    return job_id
 
 
 def save_hard_skip(conn, job_id: int, reason: str) -> None:

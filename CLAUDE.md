@@ -43,6 +43,7 @@ cp .env.example .env               # CLAUDE_CODE_OAUTH_TOKEN + APIFY_TOKEN + CRE
 - **Run one test:** `pytest tests/test_worker.py -k test_apply_tick_parks_on_needs_answer -v`
 - **CLI, one-shot discovery+score run:** `career-agent run` (writes to `backend/data/career.db`; this is what a scheduled task calls — see `scripts/install-scheduler.ps1`)
 - **CLI, backend:** `career-agent serve` → http://localhost:8000 — the JSON API at `/api/*` plus the legacy Jinja pages. uvicorn does not auto-reload, so restart it after backend changes. When launching it from inside a Claude Code session, strip the session's env first (`env -u CLAUDECODE -u CLAUDE_CODE_ENTRYPOINT career-agent serve`): the server spawns `claude -p` (the apply agent and the Home intent router), which must not inherit the parent session's variables
+- **Reset the application history:** `python -m career_agent.reset` from `backend/` is a dry run; `--yes` backs the DB up to `data/backups/` and wipes applications, apply sessions, cards, chats and per-job events (`reset.py`). Jobs, scores, facts, `qa_bank`, resumes, settings and logins are kept. Stop the server first; it refuses while port 8000 answers, and refuses to drop a `submitted`/`held_unknown` row without `--force`
 - **Frontend dev server:** `cd frontend && npm install && npm run dev` → http://localhost:5173, proxies `/api` and `/resume/*` to `:8000` (see `frontend/vite.config.ts`) — needs the backend running to have anything to talk to
 - No linter or type checker is configured for the backend. The frontend has `npm run build` (`tsc -b && vite build`) as its type check; `vite build` itself needs a native rolldown binary that this machine's Application Control policy (WDAC) blocks, so `tsc -b` alone is the practical type-check command here — `npm run dev` is unaffected and is what you actually run.
 
@@ -132,6 +133,15 @@ status answer at once. Pause, resume and stop act directly, but resume only from
 `paused` and pause only from `running`. `find_jobs` and `apply_to` spend credits, so they
 only open an `approve` card (`origin: home`, dispatched through the `HOME_ACTIONS`
 allowlist, expiring after `chat.HOME_PROMPT_TTL` or when a newer card supersedes it).
+A message holding a LinkedIn job link (`sources/linkedin.py`'s `job_id`) never reaches
+the classifier: `actions._home_paste` reads LinkedIn's public posting page in the
+background (`linkedin.fetch`, no login, no Apify), and only a posting that applies on
+the employer's own site goes on — a closed one, or one with no company-site link (signed
+out, that is what Easy Apply looks like), gets a reply and spends nothing. It then
+`store.add_job`s the posting (deduped by source id, then fingerprint), scores it if it
+has no assessment (`worker.score_job`) and opens an `apply_link` card. The secret check
+runs on the text minus the link, since a slug like `…-pan-india-…` is not the user's
+secret.
 `POST /api/chat/prompts/{id}/answer` splits by card. A Home card is answered on the event
 loop, because an approval starts background tasks. Every answer echo carries
 `{prompt_id, decision}` — Home's and a job's — which is how the chat shows it on the
@@ -235,10 +245,11 @@ teaches the agent that in its own NOTES FROM THE HUMAN section.
 `submit()`'s keyword-only `submit_allowed` and, on a resume, also the checkpoint's own
 `can_submit` bit, so a Continue never escalates a draft-only run. Only the job's Apply
 and Apply anyway buttons (`api.api_apply`, `api.api_override`, `app.apply`,
-`app.override`; Apply anyway is how a gate-skipped job starts) and Continue
-(`actions._resume_run`) pass `submit_allowed`. The worker (Start/Resume in either mode,
-and auto-resume) and Home's `apply_to` card always draft, and no production caller
-injects `run_agent`
+`app.override`; Apply anyway is how a gate-skipped job starts), Home's `apply_link` card
+(a job link the human pasted: `actions._home_apply_link`, which also overrides a gate
+skip) and Continue (`actions._resume_run`) pass `submit_allowed`. The worker
+(Start/Resume in either mode, and auto-resume) and Home's LLM-routed `apply_to` card
+always draft, and no production caller injects `run_agent`
 (a test pins both). `SUBMISSION_IMPLEMENTED` is **`True` since 2026-10-03**, by the
 user's decision
 ([design](docs/superpowers/specs/2026-10-03-submit-on-explicit-apply-design.md));
@@ -401,6 +412,8 @@ Configuration is split by who owns it and how sensitive it is — don't conflate
   - `run_session(popen=...)` and `AgentRun(popen=...)`, for a fake child over pipes
   - `secret_fill.fill_and_submit(connect=...)` and `page_urls(connect=...)`
   - `intent.route(runner=...)` and `actions.home_message(runner=...)`
+  - `sources.linkedin.fetch(get=...)`; a chat test patches `actions.linkedin.fetch` and
+    `actions.worker.score_job`, so no test reads LinkedIn or calls the scoring model
 
   This project has deliberately avoided needing a live browser or spending API credits
   in CI.

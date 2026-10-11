@@ -96,3 +96,20 @@ Everything else is unchanged: the review card and its Approve, the backend's che
 confirmation page, the holds, and the daily cap. The Home card, the queue worker and
 auto-resume stay draft-only, because an unattended or LLM-routed path is never
 submit-capable. A broader "submit by default everywhere" was considered and declined.
+
+## Revision (2026-10-11): a pasted job link may submit
+
+The user asked to paste a LinkedIn job link into Home chat and apply to that job. The
+backend detects the link itself (a regex, not the classifier), reads LinkedIn's public
+posting page, adds and scores the job, and opens a Home card with the action
+`apply_link`. Approving it starts a manual run with `submit_allowed`, and it overrides a
+gate skip, because the human named that exact job: it is the same explicit choice as the
+job's Apply or Apply anyway button, made from Home. The rule above still holds. The
+LLM-routed "apply to #id" card (`apply_to`), the queue worker and auto-resume stay
+draft-only, and a submit still needs the review card's Approve.
+
+Limits: only a posting that applies on the employer's own site gets a card. Signed out,
+LinkedIn shows no apply control for an Easy Apply posting, so a posting with no
+company-site link is treated as Easy Apply and refused before any spend. LinkedIn also
+hides the employer's link from signed-out visitors, so the agent's Chrome must be signed
+in to LinkedIn for the run to get past the posting.

@@ -1102,3 +1102,31 @@ def test_startup_sweep_does_not_call_a_finished_job_held(conn, monkeypatch):
     assert checkpoint.get(conn, job_id)["status"] == "done"
     said = _texts(conn, job_id) + _texts(conn, None)
     assert not any("held for review" in t or "interrupted" in t for t in said), said
+
+
+async def test_score_job_scores_an_unscored_job_once(conn, brief_path, monkeypatch):
+    """A job added from a pasted link has never been through the pipeline."""
+    from career_agent import gate
+    job_id = conn.execute(
+        "INSERT INTO job (fingerprint, source, external_id, company, company_normalized,"
+        " title, title_normalized) VALUES ('p1', 'linkedin', '9', 'Acme', 'acme',"
+        " 'AI Engineer', 'aiengineer')").lastrowid
+    conn.commit()
+    asked = []
+
+    async def ask(prompt, model=None):
+        asked.append(model)
+        return json.dumps({"role_fit": 70, "credibility": 70, "opportunity": 70,
+                           "application_quality": 70, "eligibility_soft": 70,
+                           "verdict": "hold", "rationale": "ok"})
+    monkeypatch.setattr(worker.run_module, "_ask", ask)
+
+    first = await worker.score_job(conn, job_id, brief_path)
+    again = await worker.score_job(conn, job_id, brief_path)
+
+    assert (first["verdict"], first["weighted_score"]) == ("hold", 70.0)
+    assert tuple(again) == tuple(first)
+    assert asked == [store.get_settings(conn)["scoring_model"]]     # one call, the scoring model
+    rows = conn.execute("SELECT stage, prompt_version FROM assessment WHERE job_id = ?",
+                        (job_id,)).fetchall()
+    assert [tuple(r) for r in rows] == [("scored", gate.PROMPT_VERSION)]

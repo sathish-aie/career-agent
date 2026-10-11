@@ -9,6 +9,7 @@ import type { OpenPrompt } from '../../api'
 const WHAT: Record<string, string> = {
   find_jobs: 'Searches LinkedIn, Naukri and your Greenhouse boards, then scores the new matches.',
   apply_to: 'Tailors your resume and drives the application in a browser.',
+  apply_link: 'Tailors your resume and fills the application in a browser. It submits only after you approve the review card in the job’s chat.',
 }
 
 /** A Home `approve` card: the only card that spends credits on a go-ahead.

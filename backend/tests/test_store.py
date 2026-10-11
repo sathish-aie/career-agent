@@ -648,3 +648,14 @@ def test_fact_cited_by_answers_for_one_fact(conn):
 
     assert store.fact_cited_by(conn, 1) == ["tailored-1", "tailored-2"]
     assert store.fact_cited_by(conn, 2) == []
+
+
+def test_add_job_returns_one_id_for_a_repeat_link_and_for_the_same_role(conn):
+    # No staleness cut: the human picked this posting, however old it is.
+    first = store.add_job(conn, _job(source="linkedin", external_id="77",
+                                     posted_at="2019-01-01", url="https://l/77"))
+    assert store.add_job(conn, _job(source="linkedin", external_id="77", title="Renamed")) == first
+    assert store.add_job(conn, _job(source="ats", external_id="5")) == first   # same fingerprint
+    assert store.add_job(conn, _job(external_id="6", company="Globex")) != first
+    rows = conn.execute("SELECT source, external_id, url FROM job ORDER BY id").fetchall()
+    assert [tuple(r) for r in rows] == [("linkedin", "77", "https://l/77"), ("ats", "6", None)]
