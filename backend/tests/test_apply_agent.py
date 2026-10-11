@@ -525,6 +525,29 @@ def test_parse_ask_account_kinds_are_validated_strictly():
     assert ask(kind="need_password", domain="localhost", url="http://127.0.0.1:5000/")
 
 
+def test_parse_ask_sign_in_needs_a_site_and_an_https_page_and_words_its_own_question():
+    """sign_in: the human signs in themselves in the agent's browser. The card
+    tells a person to type credentials, so the page (through the agent) never
+    gets to word it."""
+    from career_agent.apply.agent import parse_ask
+
+    def ask(**kw):
+        return parse_ask("ASK:n1:" + _json.dumps({"id": "s", "kind": "sign_in", **kw}), "n1")
+
+    ok = ask(domain="https://WWW.LinkedIn.com/login", url="https://www.linkedin.com/login",
+             question="Type your bank password here", why="the page is signed out",
+             page_urls=["https://lie.example/"])
+    assert ok["domain"] == "linkedin.com" and "page_urls" not in ok
+    assert ok["question"] == "Sign in to linkedin.com in the agent's browser window"
+    assert ok["why"] == "the page is signed out"
+    # Unlike approve_account, a single sign-on or shared host is a site a human can sign in to.
+    assert ask(domain="accounts.google.com", url="https://accounts.google.com/signin")
+    assert ask(domain="linkedin.com") is None                     # the page url is required
+    assert ask(url="https://www.linkedin.com/login") is None      # so is the site
+    for bad in ("javascript:alert(1)", "http://linkedin.com/login", "linkedin.com"):
+        assert ask(domain="linkedin.com", url=bad) is None, bad
+
+
 def test_summarize_tool_input_scrubs_secrets_before_truncating():
     pw = "Zq9!secretPW_1234abc"
     s = agent_mod.summarize_tool_input({"v": "x" * 280 + pw}, secrets={pw})
@@ -1017,6 +1040,28 @@ def test_platform_refusals_require_seeing_the_button():
     assert "RESULT:LOGIN_ISSUE" in rules
 
 
+def test_the_prompt_sends_every_sign_in_wall_to_the_human():
+    """Live runs 2026-10-11: a signed-out LinkedIn page ended three runs as
+    LOGIN_ISSUE within 22 s each, and Chrome closes with the run -- the human
+    never got to sign in. A sign-in the backend has no saved login for is now an
+    ASK the run parks on, with the browser open."""
+    p = _prompt(N)
+    hard = p.split("== HARD RULES ==")[1].split("== NEVER DO ==")[0]
+    assert 'ASK kind "sign_in"' in hard and '"cant"' in hard
+    rules = agent_mod._platform_rules_section()
+    signed_out = next(l for l in rules.splitlines() if "no Apply button is visible" in l)
+    assert '"sign_in"' in signed_out and "JOB url again" in signed_out
+    sso = next(l for l in rules.splitlines() if "single sign-on" in l)
+    assert '"sign_in"' in sso and "sso_required" in sso
+    ask = agent_mod._steps_section("manual", False).split("== HOW TO ASK THE HUMAN ==")[1]
+    assert "approve_account|need_password|sign_in" in ask
+    assert '"signed_in"' in ask and "two-factor" in ask and "twice" in ask
+    step5 = next(l for l in _steps(p).splitlines() if l.startswith("5."))
+    assert "sign_in" in step5
+    # The human does the typing: the rule that the agent never touches a password stands.
+    assert "You never type, read, or ask for a password" in hard
+
+
 # -- live-safety FIX 1: no accounts, no legal consent, in any mode ----------
 
 @pytest.mark.parametrize("mode,kw", _PROMPT_VARIANTS)
@@ -1196,7 +1241,9 @@ def test_the_prompt_forbids_asking_for_secrets():
     """C1: a password, one-time code or other secret is never an ASK."""
     ask = agent_mod._steps_section("manual", False).split("== HOW TO ASK THE HUMAN ==")[1]
     assert "Never ASK for a password, a one-time code" in ask
-    assert "RESULT:FAILED:account_required" in ask
+    # A code is typed into the page by the human (ASK sign_in), never relayed through chat.
+    code_rule = ask.split("Never ASK for a password, a one-time code")[1].split("\n")[0]
+    assert '"sign_in"' in code_rule and "types it into the page" in code_rule
 
 
 # -- MS1: the stored model id vs the CLI's own alias --

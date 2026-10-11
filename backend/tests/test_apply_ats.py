@@ -1711,6 +1711,134 @@ def test_an_approve_account_card_carries_the_real_page_urls(conn, factory, brows
     assert payload["page_urls"] == ["https://careers.ses.com/join", "https://evil.com/x"]
 
 
+_SIGN_IN = {"id": "si", "kind": "sign_in", "domain": "linkedin.com",
+            "url": "https://www.linkedin.com/login", "why": "the page is signed out",
+            "question": "Sign in to linkedin.com in the agent's browser window"}
+
+
+def test_a_sign_in_card_carries_the_real_page_urls(conn, factory, browser_on):
+    from test_secret_fill import Page
+    browser_on(Page("https://www.linkedin.com/authwall?trk=abc"))
+    ats_apply._chat_events(factory, 1, "nn").on_ask(dict(_SIGN_IN, page_urls=["https://lie.example/"]))
+    row = chat.open_prompt_for_job(conn, 1)
+    assert row["kind"] == "sign_in"
+    assert json.loads(row["payload"])["page_urls"] == ["https://www.linkedin.com/authwall"]
+
+
+def test_a_run_gets_three_sign_in_cards_then_is_told_cant(conn, runs, factory, browser_on):
+    """A page that keeps the agent asking must not hold the human (and the one
+    browser) through wait after wait."""
+    browser_on()
+    run = runs[1] = FakeRun("nn")
+    events = ats_apply._chat_events(factory, 1, "nn")
+    for _ in range(ats_apply.MAX_SIGN_IN_CARDS):
+        _waiting_on(run, events, "ask", dict(_SIGN_IN))
+    assert run.sent == []
+    _waiting_on(run, events, "ask", dict(_SIGN_IN))
+    assert [_sent_body(s) for s in run.sent] == [{"id": "si", "answer": "cant"}]
+    cards = conn.execute("SELECT COUNT(*) FROM agent_prompt WHERE kind = 'sign_in'").fetchone()[0]
+    assert cards == ats_apply.MAX_SIGN_IN_CARDS
+    assert any("sign in" in t for t in _chat_texts(conn))
+    # A different run of the same job starts its own count.
+    _waiting_on(run, ats_apply._chat_events(factory, 1, "nn"), "ask", dict(_SIGN_IN))
+    assert len(run.sent) == 1
+
+
+def test_answering_a_sign_in_card_tells_the_agent_and_remembers_nothing(conn, runs, browser_on):
+    from test_secret_fill import Field, Page
+    from career_agent.web import actions
+    browser_on(Page("https://www.linkedin.com/feed/", [Field(visible=False, value="x")]))
+    run = _waiting_run(runs)
+    pid = _open(conn, "sign_in", _SIGN_IN)
+    r = actions.answer_prompt(conn, pid, {"answer": "approve"})
+    assert r["code"] == 422 and run.sent == []
+    assert actions.answer_prompt(conn, pid, {"answer": "signed_in", "remember": True})["ok"]
+    assert [_sent_body(s) for s in run.sent] == [{"id": "si", "answer": "signed_in"}]
+    assert conn.execute("SELECT COUNT(*) FROM qa_bank").fetchone()[0] == 0
+    echo = [m for m in chat.messages_after(conn, chat.conversation_for_job(conn, 1))
+            if m["role"] == "user"][-1]
+    assert echo["content"] == "Signed in to linkedin.com"
+    assert echo["payload"] == {"prompt_id": pid, "decision": "signed_in"}
+
+
+def test_a_sign_in_is_not_confirmed_while_a_password_is_still_typed(conn, runs, browser_on):
+    """@playwright/mcp renders a password input's value in the agent's next
+    snapshot: the agent gets no turn while one is in the page."""
+    from test_secret_fill import Field, Page
+    from career_agent.web import actions
+    [page] = browser_on(Page("https://www.linkedin.com/login", [Field(value="hunter2")]))
+    run = _waiting_run(runs)
+    pid = _open(conn, "sign_in", _SIGN_IN)
+    r = actions.answer_prompt(conn, pid, {"answer": "signed_in"})
+    assert r["code"] == 409 and "password" in r["message"] and run.sent == []
+    assert chat.open_prompt_for_job(conn, 1)["id"] == pid           # still open, nothing claimed
+    assert "hunter2" not in _db_dump(conn)
+    page.main.fields[0].value = ""                                   # the human finished
+    assert actions.answer_prompt(conn, pid, {"answer": "signed_in"})["ok"]
+    assert [_sent_body(s) for s in run.sent] == [{"id": "si", "answer": "signed_in"}]
+
+
+def test_a_sign_in_pause_parks_the_live_session_and_resumes_it_on_the_humans_word(
+        conn, runs, factory, browser_on):
+    """End to end over a fake claude child: the ASK parks the session with its
+    stdin open (the browser stays up with it), the card opens in the backend's
+    own words, a confirmation while a password is still typed is refused, and
+    the next one reaches that same session, which runs on to its result."""
+    from test_runner import FakePopen, _assistant, _result, _until
+    from test_secret_fill import Field, Page
+    from career_agent.apply.runner import AgentRun
+    from career_agent.web import actions
+    field = Field(value="hunter2")
+    browser_on(Page("https://www.linkedin.com/checkpoint/lg/login?session=abc", [field]))
+    fake = FakePopen()
+    run = runs[1] = AgentRun(["x"], ".", {}, "nn", ats_apply._chat_events(factory, 1, "nn"),
+                             popen=lambda *a, **kw: fake)
+    run.start("go")
+    ask = {"id": "si", "kind": "sign_in", "domain": "www.linkedin.com",
+           "url": "https://www.linkedin.com/authwall", "question": "Tell me your password"}
+    fake.emit(_assistant("The page is signed out.\nASK:nn:" + json.dumps(ask)))
+    fake.emit(_result())
+    assert run.waiting.wait(5) and not run.done.is_set()
+    assert _until(lambda: chat.open_prompt_for_job(conn, 1)) and _until(fake.stdin.getvalue)
+    card = chat.open_prompt_for_job(conn, 1)
+    payload = json.loads(card["payload"])
+    assert payload["question"] == "Sign in to linkedin.com in the agent's browser window"
+    assert payload["page_urls"] == ["https://www.linkedin.com/checkpoint/lg/login"]
+    written = fake.stdin.getvalue()
+
+    r = actions.answer_prompt(conn, card["id"], {"answer": "signed_in"})
+    assert r["code"] == 409 and run.waiting.is_set()
+    assert fake.stdin.getvalue() == written                 # still parked: the agent heard nothing
+    field.value = ""                                        # the sign-in went through
+    assert actions.answer_prompt(conn, card["id"], {"answer": "signed_in"})["ok"]
+    assert _until(lambda: fake.stdin.getvalue() != written)
+    told = json.loads(fake.stdin.getvalue().splitlines()[-1])["message"]["content"][0]["text"]
+    assert told == 'ANSWER:nn:{"id": "si", "answer": "signed_in"}'
+
+    fake.emit(_assistant("Signed in; the form is filled.\nRESULT:nn:DRAFT_READY"))
+    fake.emit(_result()); fake.close()
+    assert run.wait(5) and run.result_line == "RESULT:nn:DRAFT_READY"
+    assert "hunter2" not in run.transcript and "hunter2" not in _db_dump(conn)
+    assert "Tell me your password" not in _db_dump(conn)
+
+
+def test_cant_sign_in_needs_no_browser_and_an_unreachable_one_is_a_503(conn, runs, monkeypatch):
+    from career_agent.apply import secret_fill
+    from career_agent.web import actions
+
+    def gone(cdp_url):
+        raise RuntimeError("cdp went away")
+    monkeypatch.setattr(secret_fill, "_live_connect", gone)
+    run = _waiting_run(runs)
+    pid = _open(conn, "sign_in", _SIGN_IN)
+    r = actions.answer_prompt(conn, pid, {"answer": "signed_in"})
+    assert r["code"] == 503 and run.sent == []
+    assert chat.open_prompt_for_job(conn, 1)["id"] == pid
+    assert actions.answer_prompt(conn, pid, {"answer": "cant"})["ok"]
+    assert _sent_body(run.sent[0]) == {"id": "si", "answer": "cant"}
+    assert "Could not sign in to linkedin.com" in _chat_texts(conn)
+
+
 def test_a_tool_call_echoing_a_sent_password_is_redacted_in_chat_and_transcript(conn, factory):
     from test_runner import FakePopen, _assistant, _result
     from career_agent.apply.runner import AgentRun

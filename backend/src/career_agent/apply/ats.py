@@ -3,6 +3,7 @@ machine and every write; `apply/agent.py` owns the browser session that
 decides an outcome. See docs/lld-apply-button-v2.md section 5."""
 import asyncio
 import datetime as dt
+import itertools
 import json
 import logging
 import re
@@ -28,6 +29,9 @@ MAX_ATTEMPTS = 3
 # A resumable stop consumes no attempt, so without a cap an always-slow form
 # would resume forever. Past it the job is recorded as an ordinary failure.
 MAX_RESUMES = 3
+# "Sign in needed" cards per run. Each parks the run, and the one browser, for
+# up to answer_wait_s: a page that keeps the agent asking gets told "cant".
+MAX_SIGN_IN_CARDS = 3
 BLOCKING = ("in_flight", "submitted", "held_unknown", "failed_permanent")
 
 # Jobs an Apply, a Continue or a worker tick has claimed while its run may not
@@ -187,7 +191,8 @@ def preflight() -> None:
     agent_mod.require_binaries()
     try:
         chrome_mod.get_chrome_path()
-    except RuntimeError as exc:   # "Chrome not found -- set CHROME_PATH"
+        chrome_mod.profile_dir()
+    except RuntimeError as exc:   # "Chrome not found -- set CHROME_PATH", a bad CHROME_PROFILE_DIR
         raise agent_mod.PreconditionError(str(exc)) from exc
 
 
@@ -261,7 +266,7 @@ _NARRATED_TOOLS = {"browser_navigate", "browser_file_upload", "browser_click",
 
 
 def _real_page_urls() -> list[str]:
-    """For an approve_account card: what the browser is really on."""
+    """For an approve_account or sign_in card: what the browser is really on."""
     from career_agent.apply import secret_fill
     try:
         return secret_fill.page_urls()
@@ -311,15 +316,22 @@ def _chat_events(conn_factory, job_id: int, nonce: str, mode: str = "manual",
     # with none -- an is_error result alone included -- falls back.
     heard = threading.Event()
 
+    sign_ins = itertools.count(1)
+
     def on_ask(payload: dict) -> None:
         heard.set()
         from career_agent import store      # store imports this module
         if store.is_secret_card(payload["kind"], payload):
             refuse_secret(payload)
             return
+        if payload["kind"] == "sign_in" and next(sign_ins) > MAX_SIGN_IN_CARDS:
+            answer_now(payload, "cant",
+                       f"The agent asked you to sign in more than {MAX_SIGN_IN_CARDS} times "
+                       "in this run; told it you can't, so it stops asking.")
+            return
 
         def record(c):
-            if payload["kind"] == "approve_account":
+            if payload["kind"] in ("approve_account", "sign_in"):
                 payload["page_urls"] = _real_page_urls()   # the browser's, never the agent's
             pid = chat.open_prompt(c, job_id, payload["kind"], payload)
             _checkpoint(checkpoint.mark_waiting, c, job_id, pid)
@@ -327,17 +339,23 @@ def _chat_events(conn_factory, job_id: int, nonce: str, mode: str = "manual",
                 auto_fill_login(c, pid, payload)
         with_conn(record, "an ASK")
 
-    def refuse_secret(payload: dict) -> None:
-        """A secret never goes through a question card: no card, no checkpoint
-        wait, and the agent is told "none" at once, as for a login it may not use."""
+    def answer_now(payload: dict, answer: str, note: str) -> None:
+        """No card and no checkpoint wait: the agent is answered at once, and
+        the chat says why."""
         run = agent_mod.RUNS.get(job_id)
         if run is not None:
             run.send(agent_mod.answer_line(nonce, payload["kind"],
-                                           {"id": payload.get("id"), "answer": "none"}))
+                                           {"id": payload.get("id"), "answer": answer}))
+        post("system", note)
+
+    def refuse_secret(payload: dict) -> None:
+        """A secret never goes through a question card: the agent is told
+        "none", as for a login it may not use."""
         q = str(payload.get("question") or "")
         q = q if len(q) <= 80 else q[:79] + "…"
-        post("system", f"The agent asked for a secret ({q}). Secrets are never typed into chat — "
-                       "saved logins are filled by the backend; manage them in Logins.")
+        answer_now(payload, "none",
+                   f"The agent asked for a secret ({q}). Secrets are never typed into chat — "
+                   "saved logins are filled by the backend; manage them in Logins.")
 
     def auto_fill_login(c, pid: int, payload: dict) -> None:
         """No human step (spec S5): answer_prompt fills the saved login over

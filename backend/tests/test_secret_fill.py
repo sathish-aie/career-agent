@@ -219,6 +219,25 @@ def test_after_submit_runs_only_after_a_proven_clean_submit():
     assert seen == [(False, ["requestSubmit"])]
 
 
+@pytest.mark.parametrize("field, typed", [
+    (Field(value="hunter2"), True),
+    (Field(visible=False, value="hunter2"), False),     # not in the agent's snapshot
+    (Field(), False),
+])
+def test_password_typed_sees_only_a_visible_filled_password_field(field, typed):
+    pages = (Page("https://example.com/"), Page("https://www.linkedin.com/login", [field]))
+    assert secret_fill.password_typed(connect=connect_to(*pages)) is typed
+
+
+def test_password_typed_looks_in_every_frame_of_every_site():
+    """Unlike a fill, this is not tied to one domain: a human signs in wherever
+    the site sends them (an SSO iframe included)."""
+    sso = Frame("https://accounts.google.com/signin", [Field(value="x")])
+    page = Page("https://jobs.example.com/apply", frames=[sso])
+    assert secret_fill.password_typed(connect=connect_to(page)) is True
+    assert secret_fill.password_typed(connect=connect_to()) is False
+
+
 def test_page_urls_are_the_real_browser_urls_without_query_or_fragment():
     pages = [Page("https://ses.com/a?token=x#f"), Page("https://evil.com/b")]
     assert secret_fill.page_urls(connect=connect_to(*pages)) == [

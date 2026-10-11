@@ -18,9 +18,58 @@ function SigningIn({ domain }: { domain?: string }) {
   )
 }
 
+/** sign_in: the agent has stopped at a sign-in it has no saved login for. Its
+ * browser stays open while this card is, and the human signs in there
+ * themselves. The backend refuses "I've signed in" while a password is still
+ * typed into the page, so the agent never reads one. */
+function SignIn({ p, busy, send, error }: {
+  p: AskPayload
+  busy: boolean
+  send: (body: Record<string, unknown>) => void
+  error: string | null
+}) {
+  return (
+    <section className="ccard card">
+      <div className="ccard__head ccard__head--ask">
+        <Icon d={P.lock} size={14} />
+        Sign in needed
+      </div>
+      <div className="ccard__body">
+        <p className="ccard__q">{p.question}</p>
+        {p.why && <p className="ccard__sub">Why: {p.why}</p>}
+        <div className="kv">
+          {p.domain && <><span className="kv__k">Site</span><span className="mono">{p.domain}</span></>}
+          <span className="kv__k">Browser is on</span>
+          <span className="mono">{p.page_urls?.length ? p.page_urls.join(', ') : 'unknown'}</span>
+        </div>
+        <p className="ccard__warn">
+          Sign in yourself in the agent’s Chrome window, which stays open while this card
+          is. Check its address bar first. The agent never sees your password, and that
+          sign-in is kept for later applications.
+        </p>
+        <div className="ccard__actions">
+          <button className="btn pri" disabled={busy} onClick={() => send({ answer: 'signed_in' })}>
+            I’ve signed in
+          </button>
+          <button className="btn" disabled={busy} onClick={() => send({ answer: 'cant' })}>
+            I can’t sign in
+          </button>
+        </div>
+        {error && (
+          <div className="alert" role="alert">
+            <Icon d={P.refused} size={14} />
+            <span><b>Refused:</b> {error}</span>
+          </div>
+        )}
+      </div>
+    </section>
+  )
+}
+
 /** One open ASK from the agent: a choice, a typed answer, a plain approval,
- * or an account to create. A refusal shows inside the card and leaves it
- * open, because the backend refused — nothing was answered. */
+ * an account to create, or a sign-in for the human to do. A refusal shows
+ * inside the card and leaves it open, because the backend refused — nothing
+ * was answered. */
 export function AskCard({ prompt, onAnswered }: { prompt: OpenPrompt; onAnswered: () => void }) {
   const p = prompt.payload as unknown as AskPayload
   const { busy, error, send } = useAnswer(prompt.id, onAnswered)
@@ -30,6 +79,7 @@ export function AskCard({ prompt, onAnswered }: { prompt: OpenPrompt; onAnswered
   const account = p.kind === 'approve_account'
 
   if (p.kind === 'need_password') return <SigningIn domain={p.domain} />
+  if (p.kind === 'sign_in') return <SignIn p={p} busy={busy} send={send} error={error} />
 
   const rememberBox = (
     <label className="ccard__remember">

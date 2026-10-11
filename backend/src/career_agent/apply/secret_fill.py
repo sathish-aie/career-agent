@@ -173,6 +173,24 @@ def page_urls(*, cdp_url: str = CDP_URL, connect=None) -> list[str]:
         return [display_url(page.url) for page in _pages(browser)]
 
 
+def password_typed(*, cdp_url: str = CDP_URL, connect=None) -> bool:
+    """True while a visible password input on any page holds a value. After a
+    human signs in by hand (ASK sign_in) the agent gets no turn until this is
+    False: its next snapshot would render the value. Any site and any frame --
+    a person signs in wherever the site sends them."""
+    _require_no_running_loop()
+    with (connect or _live_connect)(cdp_url) as browser:
+        for page in _pages(browser):
+            for frame in page.frames:
+                try:
+                    if any(h.is_visible() and h.input_value()
+                           for h in frame.query_selector_all(_PASSWORD_INPUT)):
+                        return True
+                except Exception:
+                    continue        # the frame navigated away mid-look: nothing left in it
+    return False
+
+
 def fill_and_submit(domain: str, password: str, *, cdp_url: str = CDP_URL,
                     connect=None, wait_s: float | None = None, max_fields: int = 2,
                     after_submit=None) -> dict:

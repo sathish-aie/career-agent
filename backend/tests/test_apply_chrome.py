@@ -1,3 +1,4 @@
+import subprocess
 from pathlib import Path
 
 import pytest
@@ -71,6 +72,70 @@ def test_ensure_profile_returns_an_absolute_path(tmp_path, monkeypatch):
     (tmp_path / "prof" / "Default").mkdir(parents=True)  # already cloned: no copy
     monkeypatch.setattr(chrome, "PROFILE_DIR", Path("prof"))
     assert chrome.ensure_profile().is_absolute()
+
+
+def test_a_profile_folder_from_the_environment_is_used_as_it_is(tmp_path, monkeypatch):
+    """CHROME_PROFILE_DIR: a folder the human chose (and may already be signed
+    in on) is never cloned into."""
+    everyday = tmp_path / "User Data"
+    (everyday / "Default").mkdir(parents=True)
+    (everyday / "Default" / "Cookies").write_text("theirs", encoding="utf-8")
+    monkeypatch.setattr(chrome, "_user_profile_source", lambda: everyday)
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setenv("CHROME_PROFILE_DIR", "agent profile")
+
+    got = chrome.ensure_profile()
+
+    assert got == (tmp_path / "agent profile").resolve() and got.is_dir()
+    assert list(got.iterdir()) == []
+
+
+@pytest.mark.parametrize("inside", ["", "Default"])
+def test_chromes_own_profile_folder_is_refused_before_any_run(tmp_path, monkeypatch, inside):
+    """Chrome ignores --remote-debugging-port on its default data folder (since
+    v136): the agent would get no browser. preflight reports it, the one
+    failure that writes no row."""
+    everyday = tmp_path / "User Data"
+    (everyday / "Default").mkdir(parents=True)
+    monkeypatch.setattr(chrome, "_user_profile_source", lambda: everyday)
+    monkeypatch.setenv("CHROME_PROFILE_DIR", str(everyday / inside))
+    with pytest.raises(RuntimeError, match="CHROME_PROFILE_DIR"):
+        chrome.ensure_profile()
+    monkeypatch.setattr(agent_mod, "require_binaries", lambda: None)
+    monkeypatch.setattr(chrome, "get_chrome_path", lambda: "chrome.exe")
+    with pytest.raises(agent_mod.PreconditionError, match="CHROME_PROFILE_DIR"):
+        ats_apply.preflight()
+
+
+class _Chrome:
+    pid = 4242
+
+    def __init__(self, closes: bool):
+        self.closes, self.waits = closes, []
+
+    def poll(self):
+        return None
+
+    def wait(self, timeout=None):
+        self.waits.append(timeout)
+        if not self.closes:
+            raise subprocess.TimeoutExpired("chrome", timeout)
+        return 0
+
+
+@pytest.mark.parametrize("closes", [True, False])
+def test_cleanup_asks_chrome_to_close_and_force_kills_only_what_is_left(monkeypatch, closes):
+    """A force kill skips Chrome's shutdown, and with it the write of the
+    cookies a human just signed in for: the next run would be signed out again."""
+    calls = []
+    monkeypatch.setattr(chrome.platform, "system", lambda: "Windows")
+    monkeypatch.setattr(chrome.subprocess, "run", lambda cmd, **kw: calls.append(cmd))
+    proc = _Chrome(closes)
+
+    chrome.cleanup(proc)
+
+    assert calls[0] == ["taskkill", "/PID", "4242"] and proc.waits == [chrome.CLOSE_WAIT_S]
+    assert calls[1:] == ([] if closes else [["taskkill", "/F", "/T", "/PID", "4242"]])
 
 
 def test_saved_passwords_are_never_cloned_into_the_agent_profile():

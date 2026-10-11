@@ -92,4 +92,6 @@ def scratch_dirs(tmp_path, monkeypatch):
     monkeypatch.setattr(agent, "LOG_DIR", tmp_path / "logs")
     monkeypatch.setattr(agent, "WORK_DIR", tmp_path / "work")
     monkeypatch.setattr(chrome, "PROFILE_DIR", tmp_path / "chrome-profile")
+    # A developer's own shell must never aim a test at a real profile folder.
+    monkeypatch.delenv("CHROME_PROFILE_DIR", raising=False)
     return real

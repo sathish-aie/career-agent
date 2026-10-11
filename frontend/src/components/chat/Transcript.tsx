@@ -20,6 +20,8 @@ function echoOf(m: ChatMessage): Echo | null {
 const DECIDED: Record<string, [string, string]> = {
   approve: ['Approved', 'b em'],
   reject: ['Not now', 'b sl'],
+  signed_in: ['Signed in', 'b em'],
+  cant: ['Couldn’t sign in', 'b sl'],
 }
 
 function Avatar() {
@@ -35,6 +37,7 @@ const KIND_LABEL: Record<string, string> = {
   approve: 'Go-ahead',
   confirm: 'Review',
   approve_account: 'Account',
+  sign_in: 'Sign-in',
 }
 
 function ClosedCard({ m, echo }: { m: ChatMessage; echo: Echo | undefined }) {

@@ -396,6 +396,24 @@ def _account_refusal(conn, run, row, prompt_id: int, payload: dict) -> dict | No
                         "Logins first")
 
 
+def _sign_in_refusal() -> dict | None:
+    """sign_in's check before a "signed in" is claimed or sent. The human
+    typed their own credentials into the agent's browser, and the agent's next
+    snapshot renders whatever is still in a password field (see secret_fill):
+    they finish signing in, or clear the field, first. Fails closed -- an
+    unreadable browser is not a clean one."""
+    try:
+        typed = secret_fill.password_typed()
+    except Exception as exc:
+        log.warning("could not check the browser before a sign_in answer: %s",
+                    type(exc).__name__)
+        return _refuse(503, "Could not check the agent's browser; try again")
+    if typed:
+        return _refuse(409, "A password is still typed into the page. Finish signing in, "
+                            "or clear that field, then confirm")
+    return None
+
+
 def answer_prompt(conn: sqlite3.Connection, prompt_id: int, answer: dict,
                   conn_factory=None, *, auto: bool = False,
                   brief_path: Path | None = None,
@@ -457,6 +475,8 @@ def answer_prompt(conn: sqlite3.Connection, prompt_id: int, answer: dict,
             return _refuse(422, "The answer can't be empty")
         if kind in ("approve", "approve_account") and value not in ("approve", "reject"):
             return _refuse(422, "answer must be approve or reject")
+        if kind == "sign_in" and value not in ("signed_in", "cant"):
+            return _refuse(422, "answer must be signed_in or cant")
         if kind == "text":
             value = value.strip()
         body = {"id": payload.get("id"), "answer": value,
@@ -468,6 +488,10 @@ def answer_prompt(conn: sqlite3.Connection, prompt_id: int, answer: dict,
             body = {"id": payload.get("id"), "answer": value}
             summary = (f"{'Approved' if value == 'approve' else 'Rejected'} creating an "
                        f"account at {payload.get('domain')}")
+        if kind == "sign_in":           # the human's own sign-in: nothing to remember
+            body = {"id": payload.get("id"), "answer": value}
+            summary = (f"{'Signed in to' if value == 'signed_in' else 'Could not sign in to'} "
+                       f"{payload.get('domain')}")
 
     if payload.get("origin") == "needs_answer":
         # A parked job, not a live run: nothing to relay. The answer goes to
@@ -493,6 +517,10 @@ def answer_prompt(conn: sqlite3.Connection, prompt_id: int, answer: dict,
     sent, notice = body, None   # what the agent gets; neither it nor `body` holds a password
     if kind == "approve_account" and value == "approve":
         refused = _account_refusal(conn, run, row, prompt_id, payload)
+        if refused:
+            return refused
+    if kind == "sign_in" and value == "signed_in":
+        refused = _sign_in_refusal()
         if refused:
             return refused
     if kind == "need_password":
@@ -567,7 +595,9 @@ def answer_prompt(conn: sqlite3.Connection, prompt_id: int, answer: dict,
 HELP_TEXT = ("I can find new jobs (\"find jobs\"), show your queue (\"what's my queue?\"),"
              " apply to a queued job (\"apply to #1639\" or \"apply to Acme\"),"
              " apply to a LinkedIn job you paste the link of,"
-             " pause, resume or stop the apply run, and tell you the status.")
+             " pause, resume or stop the apply run, and tell you the status."
+             " When a site needs a sign-in, the agent keeps its browser open and asks"
+             " you in that job's chat.")
 _ROUTER_DOWN = ("I couldn't work out what you meant — the command router may be unavailable"
                 " (is the claude CLI installed and signed in?). Say \"help\" to see the commands. ")
 

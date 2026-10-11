@@ -117,7 +117,7 @@ and the job chat as the hub's Chat tab at `/jobs/:id/chat` (`routes/JobChat.tsx`
 `job_id`). `components/chat/` holds the shared pieces: `useTranscript` (the cursor poll,
 keyed by conversation), `Transcript` (which takes `card` and `notes` props rather than
 forking per screen), `ApproveCard` (Home's go-ahead), `AskCard` (choice/text/approve/
-`approve_account`, with `need_password` rendered as a notice, never a card),
+`approve_account`/`sign_in`, with `need_password` rendered as a notice, never a card),
 `ConfirmCard`, `Composer`, `ModelPicker` and `chat.css`. Both composers' pickers write
 through `GET`/`PUT /api/settings/models` (MS1), a partial writer that keeps
 `max_score_per_run` and leaves whichever model the body omits — `PUT /api/settings`
@@ -224,7 +224,7 @@ in `agent.RUNS[job_id]`, which is how the answer API reaches it.
 
 **Protocol.** Every line is stamped with a per-run nonce, and only lines with that nonce
 count. The agent emits `ASK:<nonce>:{json}` (kinds `choice`, `text`, `approve`,
-`approve_account`, `need_password`), `CONFIRM:<nonce>:{"fields": [...], ...}` or
+`approve_account`, `need_password`, `sign_in`), `CONFIRM:<nonce>:{"fields": [...], ...}` or
 `RESULT:<nonce>:<code>`, then ends its turn. `AgentRun._end_of_turn` takes RESULT over
 CONFIRM over ASK (the last line of a kind wins), and nudges a turn that has none, up to
 `MAX_NUDGES` times. The backend writes `ANSWER:`, `DECISION:` (`approve`/`change`/`cancel`)
@@ -365,6 +365,28 @@ only.
 - **Signing in.** `need_password` is answered by the backend from `on_ask`: it fills the
   saved login the same way (`max_fields=1`), and anything short of a submit answers
   `none`.
+- **The human signs in (`sign_in`).** Any sign-in with no saved login — a signed-out
+  job board, an employer login wall, an SSO page, a one-time or two-factor code — is an
+  ASK of kind `sign_in` (domain + the page's https url), not a `LOGIN_ISSUE` or
+  `sso_required` stop. The run parks like any card, so Chrome stays open and the work
+  clock is paused for `answer_wait_s`; the human signs in in that window and answers
+  `signed_in` or `cant`. `parse_ask` writes the card's question itself (the card asks a
+  person to type credentials, so the page never words it) and `on_ask` stamps the
+  browser's real `page_urls`. `actions._sign_in_refusal` refuses a `signed_in` while
+  `secret_fill.password_typed()` sees a visible password input holding a value, since
+  the agent's next snapshot would render it; a browser it cannot read is a 503, never a
+  pass. `ats.MAX_SIGN_IN_CARDS` (3) per run: the next ask is answered `cant` with no
+  card. The answer is never remembered or pinned. On `cant` the prompt lets the agent
+  fall back to `approve_account` where the site offers registration. A Continue after a
+  timed-out card launches a fresh Chrome and the agent asks again; only an answer
+  inside the live wait resumes the same page.
+- **The agent's Chrome profile.** `chrome.profile_dir()`: `CHROME_PROFILE_DIR` (read at
+  call time, used as it is, never cloned into) or `data/chrome-profile`. It is
+  persistent, so a sign-in lasts across runs. Chrome's own default `User Data` folder is
+  refused in `preflight`, because Chrome 136+ ignores `--remote-debugging-port` there.
+  `chrome.cleanup` asks Chrome to close (plain `taskkill`, SIGTERM on POSIX) and
+  force-kills only after `CLOSE_WAIT_S`: a force kill skips the cookie flush and could
+  lose a sign-in made seconds earlier.
 - **Fill rules.** `fill_and_submit` fills only https frames whose real URL `host_matches`
   the domain, re-checked per field. It fills only when exactly one form qualifies
   (`ambiguous_form` otherwise). A submit counts only on navigation or field detach.
@@ -410,7 +432,10 @@ Configuration is split by who owns it and how sensitive it is — don't conflate
   instead:
   - `submit(run_agent=...)`, called as `(prompt, job_id, nonce, events, session_id=None, resume=False)`
   - `run_session(popen=...)` and `AgentRun(popen=...)`, for a fake child over pipes
-  - `secret_fill.fill_and_submit(connect=...)` and `page_urls(connect=...)`
+  - `secret_fill.fill_and_submit(connect=...)`, `page_urls(connect=...)` and
+    `password_typed(connect=...)`. A test that answers a `sign_in` card with
+    `signed_in` must be a sync test with fake pages (`browser_on` in
+    `tests/test_apply_ats.py`): the check uses Playwright's sync API
   - `intent.route(runner=...)` and `actions.home_message(runner=...)`
   - `sources.linkedin.fetch(get=...)`; a chat test patches `actions.linkedin.fetch` and
     `actions.worker.score_job`, so no test reads LinkedIn or calls the scoring model

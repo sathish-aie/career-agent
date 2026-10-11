@@ -168,7 +168,7 @@ export interface OpenPrompt {
  * carry domain/email/terms_summary. */
 export interface AskPayload {
   id: string
-  kind: 'choice' | 'text' | 'approve' | 'approve_account' | 'need_password'
+  kind: 'choice' | 'text' | 'approve' | 'approve_account' | 'need_password' | 'sign_in'
   question: string
   options: string[]
   why: string

@@ -943,6 +943,23 @@ def test_approving_an_account_through_the_route_fills_off_the_event_loop(client,
     assert run.sent == ['ANSWER:n0nce:{"id": "acct", "answer": "approve", "submitted": true}']
 
 
+def test_confirming_a_sign_in_through_the_route_checks_the_browser_off_the_event_loop(
+        client, conn, runs, monkeypatch):
+    """The human signed in by hand: the route's own threadpool runs the sync
+    CDP check (secret_fill refuses a running loop) before the agent is told."""
+    from test_secret_fill import Page, connect_to
+    from career_agent.apply import secret_fill
+    monkeypatch.setattr(secret_fill, "_live_connect",
+                        connect_to(Page("https://www.linkedin.com/feed/")))
+    run = runs[1] = _LiveRun()
+    pid = chat.open_prompt(conn, 1, "sign_in", {
+        "id": "si", "kind": "sign_in", "question": "Sign in to linkedin.com",
+        "domain": "linkedin.com", "url": "https://www.linkedin.com/login"})
+    r = client.post(f"/api/chat/prompts/{pid}/answer", json={"answer": "signed_in"})
+    assert r.status_code == 200, r.json()
+    assert run.sent == ['ANSWER:n0nce:{"id": "si", "answer": "signed_in"}']
+
+
 
 # -- final review ----------------------------------------------------------------
 
@@ -1050,6 +1067,7 @@ def test_resume_pins_only_choice_text_and_confirm_changes(conn):
             ("approve", {"question": "Go?"}, {"answer": "approve"}),
             ("approve_account", {"question": "Create?"}, {"answer": "approve"}),
             ("need_password", {"question": "pw"}, {"answer": "by_backend"}),
+            ("sign_in", {"question": "Sign in to linkedin.com"}, {"answer": "signed_in"}),
             ("text", {"question": "Notice?"}, {"answer": "30"}),
             ("choice", {"question": "Visa?"}, {"answer": "Yes"}),
             ("confirm", {}, {"decision": "change", "changes": {"Phone": "+91"}})):

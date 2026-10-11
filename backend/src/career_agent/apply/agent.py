@@ -237,10 +237,13 @@ def _hard_rules_section() -> str:
         "Use the candidate's name exactly as given in PROFILE on every field asking for "
         "a legal or full name -- do not shorten, expand, or otherwise \"clean up\" it.\n"
         f"{ACCOUNT_RULES_S5}\n"
-        "If an application requires an account and none is already signed in: for a site "
-        'in KNOWN LOGINS, sign in with that email and an ASK of kind "need_password"; '
-        'otherwise ASK kind "approve_account". If it is rejected or the answer is "none", '
-        "stop and output RESULT:FAILED:account_required as your final line.\n"
+        "If a site requires signing in and no account is already signed in: for a site "
+        'in KNOWN LOGINS, sign in with that email and an ASK of kind "need_password"; for '
+        'any other site, or when that answer is "none", ASK kind "sign_in" so the human '
+        "signs in themselves in this browser window while you wait. If the answer is "
+        '"cant" and the site lets a new applicant register, you may ASK kind '
+        '"approve_account"; if that is rejected, or nothing is left to try, stop and '
+        "output RESULT:FAILED:account_required as your final line.\n"
         "Never accept Terms of Use, privacy/data-consent statements, or any other legal "
         "agreement on the candidate's behalf -- do not tick such a checkbox or click an "
         "\"I agree\"/\"Accept\" button for one -- except the terms an approved "
@@ -271,7 +274,10 @@ def _known_logins_section(logins: list[dict]) -> str:
 # filled value shows in the agent's page snapshot, so the agent never holds a
 # password and never gets a turn while one is in the page: the backend fills,
 # submits and clears it over CDP (apply/secret_fill.py) while the agent waits,
-# then answers only "submitted", "none" or "exists".
+# then answers only "submitted", "none" or "exists". A sign-in the backend has
+# no saved login for is the human's: ASK sign_in parks the run with the
+# browser open, and "signed_in" is sent only once no password is left typed
+# into the page (actions._sign_in_refusal).
 ACCOUNT_RULES_S5 = (
     "Account creation, registration, or accepting Terms of Use / privacy consent is "
     'allowed ONLY through an ASK of kind "approve_account" (with domain, email, '
@@ -284,7 +290,11 @@ ACCOUNT_RULES_S5 = (
     "KNOWN LOGINS, open its sign-in form, fill every field except the password, and ASK "
     'kind "need_password" with domain and url (the page you are on); the backend fills '
     'the password and submits ("submitted": true) and you continue from the resulting '
-    'page, while "none" means there is no login you may use. You never type, read, or '
+    'page, while "none" means there is no login you may use. To have the human sign in '
+    "themselves -- a site with no saved login, a single sign-on page, a one-time or "
+    'two-factor code -- ASK kind "sign_in" with domain and url and wait: "signed_in" '
+    "means they finished, so take a fresh snapshot and carry on from the page you are "
+    'on, and "cant" means they could not. You never type, read, or '
     "ask for a password -- never choose one, never type into a password field, never "
     "click a show-password control, never ask the human for one, and never take a "
     "screenshot on a sign-in or sign-up page. If a page shows both a sign-in and a "
@@ -344,12 +354,15 @@ def _platform_rules_section() -> str:
         "- Naukri in-platform \"Apply\" (application stays inside Naukri): do not "
         "attempt it -> RESULT:FAILED:naukri_platform.\n"
         "- Use easy_apply or naukri_platform ONLY when you can see that in-platform "
-        "apply button on the page. If no Apply button is visible (for example the page "
-        "is signed out and shows only Sign in / Join), do not guess from the company or "
-        "the platform -> RESULT:LOGIN_ISSUE.\n"
+        "apply button on the page. If no Apply button is visible, or it opens only a "
+        "sign-in wall (the page is signed out and shows Sign in / Join), do not guess "
+        'from the company or the platform: ASK kind "sign_in" for that site, and after '
+        '"signed_in" open the JOB url again and re-check. Output RESULT:LOGIN_ISSUE only '
+        'when the answer is "cant" or the page is still signed out after that.\n'
         "- Any sign-in or registration page on accounts.google.com, "
         "login.microsoftonline.com, okta.com, or auth0.com (single sign-on): do not "
-        "attempt it -> RESULT:FAILED:sso_required."
+        'attempt it yourself -- ASK kind "sign_in" naming that host so the human signs '
+        'in; if the answer is "cant" -> RESULT:FAILED:sso_required.'
     )
 
 
@@ -394,10 +407,11 @@ def _steps_section(mode, can_submit) -> str:
         "2. Take a snapshot of the page.\n"
         "3. Run the LOCATION CHECK. Stop now if it fails.\n"
         "4. Find and click the real Apply button (not \"Save\" or \"Share\").\n"
-        "5. If a login wall appears: check PLATFORM RULES for SSO first; otherwise look "
-        "for a guest/no-account path. If none exists, sign in or register ONLY through "
-        "need_password / approve_account as HARD RULES say; if that fails, output "
-        "RESULT:FAILED:account_required.\n"
+        "5. If a login wall appears: look for a guest/no-account path first. If none "
+        "exists, sign in ONLY as HARD RULES say -- need_password for a site in KNOWN "
+        "LOGINS, otherwise an ASK of kind sign_in so the human signs in (a single "
+        "sign-on page too, see PLATFORM RULES) -- and register only through "
+        "approve_account; if none of that works, output RESULT:FAILED:account_required.\n"
         "6. Upload the resume from FILES. If the form auto-parsed and pre-filled fields "
         "from a different, previously uploaded resume, delete that upload first and "
         "upload the correct file fresh.\n"
@@ -417,19 +431,25 @@ def _steps_section(mode, can_submit) -> str:
         "PREFERENCES, KNOWN ANSWERS, or SCREENING STRATEGY -- check them all first -- "
         "or when a rule in this prompt requires "
         "approval, output exactly one line\n"
-        '  ASK:{"id":"<short id>","kind":"choice|text|approve|approve_account|need_password",'
+        '  ASK:{"id":"<short id>","kind":"choice|text|approve|approve_account|need_password|sign_in",'
         '"question":"...","options":[...],"why":"...","memory_key":"<snake_case or null>",'
         '"default":"<best guess or null>","sensitive":false}\n'
         "then END YOUR TURN and do nothing until a line beginning ANSWER: arrives.\n"
         'Account kinds (see HARD RULES) add "domain"; approve_account also "email", '
-        '"login_url" and "terms_summary"; need_password also "url" -- the exact address '
-        "of the page you are on. Emit them while ON that form with every other field "
-        "complete, then wait: the backend fills the password and submits the form. Never "
-        "type a password yourself.\n"
+        '"login_url" and "terms_summary"; need_password and sign_in also "url" -- the '
+        "exact address of the page you are on. Emit approve_account and need_password "
+        "while ON that form with every other field complete, then wait: the backend "
+        "fills the password and submits the form. Never type a password yourself.\n"
+        "For sign_in the human does all of it in this same browser window -- the "
+        "password, a single sign-on, any code -- and you do nothing until the answer: "
+        '"signed_in" means they finished, so take a fresh snapshot and continue from the '
+        'page you are on (open the JOB url again if the site moved you away); "cant" '
+        "means they could not, so follow HARD RULES. ASK sign_in at most twice for one "
+        "site; if it is still signed out after that, output RESULT:LOGIN_ISSUE.\n"
         "Never ASK for a password, a one-time code, a verification code or any other secret "
         "(kind choice or text, sensitive or not): the human is never shown such an ASK and "
-        'the answer is "none". Sign in only through need_password; if a site needs a '
-        "one-time or two-factor code, stop and output RESULT:FAILED:account_required.\n"
+        'the answer is "none". A site that needs a one-time or two-factor code is an ASK '
+        'of kind "sign_in" instead: the human types it into the page themselves.\n'
         "The JSON stays on that one line -- escape any newline inside a value as \\n. kind \"choice\" needs a non-empty options "
         "list. A KNOWN ANSWER marked stale is asked too, with that answer as default. "
         "Always set memory_key for facts that recur across applications (notice_period, "
@@ -533,15 +553,16 @@ def _result_codes_section() -> str:
         "when submission is disabled)\n"
         "RESULT:EXPIRED -- posting closed / no longer accepting applications\n"
         "RESULT:CAPTCHA -- a CAPTCHA blocks progress (do not try to solve it)\n"
-        "RESULT:LOGIN_ISSUE -- an existing sign-in failed, or the page stays signed out\n"
+        "RESULT:LOGIN_ISSUE -- a sign-in failed, or the page stays signed out after the "
+        "human was asked to sign in (ASK sign_in)\n"
         "RESULT:NEEDS_ANSWER:<question> -- fallback only; prefer an ASK line (HOW TO "
         "ASK THE HUMAN) for a question nothing above covers\n"
         "RESULT:FAILED:<reason> -- anything else; use slugs sso_required, easy_apply,\n"
         "    naukri_platform, not_eligible_location, already_applied, "
         "not_a_job_application,\n"
         "    unsafe_permissions, unsafe_verification, account_required, stuck, page_error,\n"
-        "    cancelled when they fit (account_required: an account, a legal agreement or a\n"
-        "    one-time/two-factor code is needed; cancelled: the human's DECISION was cancel)"
+        "    cancelled when they fit (account_required: an account or a legal agreement is\n"
+        "    needed and the human did not provide it; cancelled: the human's DECISION was cancel)"
     )
 
 
@@ -654,7 +675,7 @@ def parse_result(output: str, nonce: str) -> AgentResult:
     return AgentResult("failed", f"unrecognized_result:{body[:50]}")
 
 
-_ASK_KINDS = {"choice", "text", "approve", "approve_account", "need_password"}
+_ASK_KINDS = {"choice", "text", "approve", "approve_account", "need_password", "sign_in"}
 
 
 _allowed_url = credentials.secure_url   # https, or http only for localhost
@@ -663,8 +684,10 @@ _allowed_url = credentials.secure_url   # https, or http only for localhost
 def _account_ask_ok(p: dict) -> bool:
     """approve_account: an account_domain + email + https login_url;
     need_password: domain + the https url of the page the agent is on, which
-    answer_prompt checks against the stored domain. The domain is normalized
-    in place, so the card and the store key agree."""
+    answer_prompt checks against the stored domain; sign_in (the human signs
+    in themselves in the agent's browser): the same two, on any host -- a
+    single sign-on page is one. The domain is normalized in place, so the card
+    and the store key agree."""
     try:
         norm = (credentials.account_domain if p["kind"] == "approve_account"
                 else credentials.normalize_domain)
@@ -684,7 +707,12 @@ def _account_ask_ok(p: dict) -> bool:
     else:
         if not _allowed_url(p.get("url")):
             return False
-        p.setdefault("question", f"Saved password for {p['domain']}")
+        if p["kind"] == "sign_in":
+            # Ours, never the agent's: this card asks a person to type their
+            # credentials, and an untrusted page can put words in the agent's mouth.
+            p["question"] = f"Sign in to {p['domain']} in the agent's browser window"
+        else:
+            p.setdefault("question", f"Saved password for {p['domain']}")
     return True
 
 
@@ -716,7 +744,7 @@ def parse_ask(line: str, nonce: str) -> dict | None:
         return None
     if not isinstance(p["kind"], str) or p["kind"] not in _ASK_KINDS:
         return None
-    if p["kind"] in ("approve_account", "need_password"):
+    if p["kind"] in ("approve_account", "need_password", "sign_in"):
         if not _account_ask_ok(p):
             return None
     elif "question" not in p:

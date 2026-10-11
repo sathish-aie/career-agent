@@ -14,6 +14,7 @@ from pathlib import Path
 log = logging.getLogger(__name__)
 
 PROFILE_DIR = Path("data/chrome-profile")
+CLOSE_WAIT_S = 5    # for Chrome to exit on its own before cleanup() force-kills it
 
 _SKIP_ON_CLONE = {"Cache", "Code Cache", "GPUCache", "ShaderCache",
                   "GrShaderCache", "Service Worker", "CacheStorage",
@@ -89,32 +90,53 @@ def _user_profile_source() -> Path:
     return Path.home() / ".config/google-chrome"
 
 
+def profile_dir() -> Path:
+    """The agent's own Chrome profile folder: $CHROME_PROFILE_DIR (read at
+    call time, like CHROME_PATH), else data/chrome-profile. What the human
+    signs in to there stays signed in from run to run. Absolute -- a relative
+    --user-data-dir makes Chrome join a running session. Never Chrome's own
+    default folder: since v136 Chrome ignores --remote-debugging-port there,
+    so the agent would get no browser."""
+    override = os.environ.get("CHROME_PROFILE_DIR")
+    if not override:
+        return PROFILE_DIR.resolve()
+    path = Path(override).expanduser().resolve()
+    everyday = _user_profile_source().resolve()
+    if path == everyday or everyday in path.parents:
+        raise RuntimeError(f"CHROME_PROFILE_DIR is set to {override!r}, inside Chrome's own"
+                           " profile folder, which Chrome will not let the agent drive --"
+                           " point it at a separate folder and sign in there once")
+    return path
+
+
 def ensure_profile() -> Path:
-    """One-time clone of the user's Chrome profile (cookies, sessions,
-    fingerprint). Chrome must be closed during the first clone or files
-    are locked -- the copy skips what it can't read. Saved passwords (Login
-    Data*) are never copied; an existing clone is left as it is, so one made
-    before that rule keeps its copy until data/chrome-profile is deleted."""
-    if (PROFILE_DIR / "Default").exists():
-        return PROFILE_DIR.resolve()  # relative makes Chrome join a running session
+    """The profile folder, made ready. A folder the human chose
+    (CHROME_PROFILE_DIR) is used as it is. The default one is cloned once from
+    the user's Chrome profile (fingerprint, settings); Chrome must be closed
+    during that clone or files are locked -- the copy skips what it can't
+    read. Saved passwords (Login Data*) are never copied; an existing clone is
+    left as it is, so one made before that rule keeps its copy until
+    data/chrome-profile is deleted."""
+    profile = profile_dir()
     src = _user_profile_source()
-    if not src.exists():
-        PROFILE_DIR.mkdir(parents=True, exist_ok=True)  # fresh profile fallback
-        return PROFILE_DIR.resolve()  # relative makes Chrome join a running session
+    if (os.environ.get("CHROME_PROFILE_DIR") or (profile / "Default").exists()
+            or not src.exists()):      # chosen, already cloned, or nothing to clone
+        profile.mkdir(parents=True, exist_ok=True)
+        return profile
     log.info("Cloning Chrome profile from %s (first run)...", src)
-    PROFILE_DIR.mkdir(parents=True, exist_ok=True)
+    profile.mkdir(parents=True, exist_ok=True)
     for item in src.iterdir():
         if item.name in _SKIP_ON_CLONE:
             continue
         try:
             if item.is_dir():
-                shutil.copytree(item, PROFILE_DIR / item.name, dirs_exist_ok=True,
+                shutil.copytree(item, profile / item.name, dirs_exist_ok=True,
                                 ignore=shutil.ignore_patterns(*_SKIP_ON_CLONE))
             else:
-                shutil.copy2(item, PROFILE_DIR / item.name)
+                shutil.copy2(item, profile / item.name)
         except (PermissionError, OSError):
             pass  # locked file; skip
-    return PROFILE_DIR.resolve()  # relative makes Chrome join a running session
+    return profile
 
 
 def _patch_prefs(profile_dir: Path) -> None:
@@ -168,8 +190,24 @@ def launch_chrome(port: int = 9222, headless: bool = False) -> subprocess.Popen:
 
 
 def cleanup(proc: subprocess.Popen | None) -> None:
+    """Ask Chrome to close, as a person would, and force-kill only what is
+    left after CLOSE_WAIT_S. A force kill skips Chrome's shutdown, and with it
+    the write of recent cookies: a sign-in the human made seconds before the
+    run ended would be gone on the next one.
+    ponytail: blocks the caller (the event loop, in _live_run_agent's finally)
+    for up to CLOSE_WAIT_S; move it to a thread if that pause is ever felt."""
     if proc is None or proc.poll() is not None:
         return
+    try:
+        if platform.system() == "Windows":
+            subprocess.run(["taskkill", "/PID", str(proc.pid)],
+                           capture_output=True, timeout=10)
+        else:
+            os.killpg(os.getpgid(proc.pid), signal.SIGTERM)
+        proc.wait(timeout=CLOSE_WAIT_S)
+        return
+    except Exception:       # still running (TimeoutExpired), or it could not be asked
+        log.debug("Chrome did not close on its own", exc_info=True)
     try:
         if platform.system() == "Windows":
             subprocess.run(["taskkill", "/F", "/T", "/PID", str(proc.pid)],

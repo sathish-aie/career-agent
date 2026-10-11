@@ -176,7 +176,10 @@ on a gate-skipped job) and **Continue** of such a run can send. See the
 Setup:
 
 1. Have the `claude` CLI and `npx` on PATH, and a real Chrome install (the path
-   auto-detects; override with `CHROME_PATH` in `.env` if needed).
+   auto-detects; override with `CHROME_PATH` in `.env` if needed). The agent keeps its
+   own Chrome profile in `backend/data/chrome-profile`; set `CHROME_PROFILE_DIR` in
+   `.env` to keep it in another folder. It cannot be your everyday Chrome profile:
+   Chrome refuses to be driven there, so that folder is rejected.
 2. Copy `candidate_profile.toml.example` to `candidate_profile.toml` and
    fill in your real name, email, and phone (this file is gitignored). The optional
    `gender` (default `"decline"`), `[address]`, `[[work_history]]` and `[[education]]`
@@ -195,9 +198,8 @@ Setup:
    submit, exactly like the job's Apply button. Only postings that apply on the
    employer's own site get a card: a closed posting, or one with no company-site link
    (most likely Easy Apply), gets a reply and spends nothing. LinkedIn hides the
-   employer's link from signed-out visitors, so sign the agent's Chrome into LinkedIn
-   once (`chrome.exe --user-data-dir=<backend>/data/chrome-profile`), or the run ends
-   at the sign-in wall.
+   employer's link from signed-out visitors, so the first run pauses for you to sign
+   in (next paragraph).
 6. **Apply is real.** On a run started with a job's Apply or Apply anyway, the review card says
    "Approving submits the application" and its button reads **Approve and submit**.
    Approving makes the agent click the form's final submit control once. The backend
@@ -217,6 +219,17 @@ up the queue, since the review card in the chat was the review. Answers are reme
 Memory panel. A site that needs an account shows an Approve card. On approval the
 backend (never the agent) generates a password, fills it into the real page, submits the
 form, and saves the login encrypted. The agent is told only that the form was submitted.
+
+**Signing in yourself.** When a site needs a sign-in the backend has no saved login for
+(LinkedIn signed out, an employer's login wall, a Google/Microsoft/Okta page, a
+verification code), the run pauses instead of failing. The agent's Chrome window stays
+open, and the job's chat shows a **Sign in needed** card for up to 30 minutes. Sign in
+in that window, then click **I've signed in**; the same session carries on from the
+page it stopped on. The backend refuses that click while a password is still typed into
+the page, so the agent never reads one. **I can't sign in** lets the agent offer to
+create an account where the site allows it, or end the run. The sign-in is kept in the
+agent's profile for later runs. Do not open that profile folder in a Chrome of your own
+while a run is active: Chrome allows one window set per profile.
 
 **Existing Chrome profile clones.** New clones of your Chrome profile skip Chrome's saved
 passwords (`Login Data`). A `data/chrome-profile` cloned before this change still has
