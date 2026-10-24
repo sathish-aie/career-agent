@@ -1,0 +1,311 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;600&amp;display=swap">
+  <style>
+    body { margin: 0; font-family: Inter, system-ui, -apple-system, 'Segoe UI', sans-serif; background: #faf8ff; color: #131b2e; }
+    a { color: #3525cd; text-decoration: none; } a:hover { color: #4f46e5; }
+    .mono { font-family: 'JetBrains Mono', ui-monospace, 'Cascadia Code', monospace; font-variant-numeric: tabular-nums; }
+  </style>
+</helmet>
+<div style="width: 1440px; min-height: 1480px; display: flex; background: #faf8ff;">
+  <div style="width: 240px; flex-shrink: 0; background: #ffffff; border-right: 1px solid #e2e8f0;">
+    <dc-import name="Sidebar" active="dashboard" variant="running" hint-size="240px,900px"></dc-import>
+  </div>
+  <div style="flex-grow: 1; display: flex; flex-direction: column; min-width: 0;">
+    <header style="height: 56px; box-sizing: border-box; background: #ffffff; border-bottom: 1px solid #e2e8f0; padding: 0 32px; display: flex; align-items: center; justify-content: space-between;">
+      <nav style="display: flex; align-items: center; gap: 8px; font-size: 13px; line-height: 18px;">
+        <span style="color: #64748b;">Workspace</span>
+        <span class="mono" style="color: #94a3b8;">›</span>
+        <span style="font-weight: 500; color: #0f172a;">Dashboard</span>
+      </nav>
+      <button type="button" disabled="" style="height: 32px; padding: 0 14px; border-radius: 8px; border: none; background: #c3c0ff; color: #ffffff; font: 500 13px/18px Inter, system-ui, sans-serif; display: flex; align-items: center; gap: 6px; cursor: not-allowed;">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="rgba(255,255,255,0.35)" stroke-width="3"></circle><path d="M21 12a9 9 0 0 0-9-9" stroke="#ffffff" stroke-width="3" stroke-linecap="round"></path></svg>
+        Pipeline running…
+      </button>
+    </header>
+
+    <main style="padding: 32px; display: flex; flex-direction: column; gap: 24px; max-width: 1200px; box-sizing: border-box;">
+      <div style="display: flex; flex-direction: column;">
+        <h1 style="margin: 0; font-size: 24px; line-height: 32px; font-weight: 600; letter-spacing: -0.025em; color: #131b2e;">Dashboard</h1>
+        <p style="margin: 2px 0 0; font-size: 14px; line-height: 20px; color: #464555;">How your search is performing</p>
+      </div>
+
+      <!-- KPI tiles -->
+      <div style="display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 16px;">
+        <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; box-shadow: 0 1px 2px 0 rgba(0,0,0,0.05); padding: 14px 16px; display: flex; flex-direction: column; gap: 6px;">
+          <span style="font-size: 11px; line-height: 16px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: #64748b;">Discovered</span>
+          <div style="display: flex; align-items: flex-end; justify-content: space-between;">
+            <span class="mono" style="font-size: 24px; line-height: 30px; font-weight: 600; color: #131b2e;">412</span>
+            <svg width="56" height="22" viewBox="0 0 56 22"><polyline points="0,18 9,15 18,16 27,10 36,12 45,6 56,4" fill="none" stroke="#94a3b8" stroke-width="1.5" stroke-linejoin="round"></polyline></svg>
+          </div>
+        </div>
+        <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; box-shadow: 0 1px 2px 0 rgba(0,0,0,0.05); padding: 14px 16px; display: flex; flex-direction: column; gap: 6px;">
+          <span style="font-size: 11px; line-height: 16px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: #64748b;">After filter</span>
+          <div style="display: flex; align-items: flex-end; justify-content: space-between;">
+            <span class="mono" style="font-size: 24px; line-height: 30px; font-weight: 600; color: #131b2e;">186</span>
+            <svg width="56" height="22" viewBox="0 0 56 22"><polyline points="0,17 9,16 18,13 27,14 36,9 45,10 56,7" fill="none" stroke="#94a3b8" stroke-width="1.5" stroke-linejoin="round"></polyline></svg>
+          </div>
+        </div>
+        <a href="#" style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; box-shadow: 0 1px 2px 0 rgba(0,0,0,0.05); padding: 14px 16px; display: flex; flex-direction: column; gap: 6px; color: #131b2e;">
+          <span style="font-size: 11px; line-height: 16px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: #64748b;">Shortlisted →</span>
+          <div style="display: flex; align-items: flex-end; justify-content: space-between;">
+            <span class="mono" style="font-size: 24px; line-height: 30px; font-weight: 600; color: #131b2e;">38</span>
+            <svg width="56" height="22" viewBox="0 0 56 22"><polyline points="0,19 9,17 18,17 27,13 36,11 45,11 56,8" fill="none" stroke="#94a3b8" stroke-width="1.5" stroke-linejoin="round"></polyline></svg>
+          </div>
+        </a>
+        <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; box-shadow: 0 1px 2px 0 rgba(0,0,0,0.05); padding: 14px 16px; display: flex; flex-direction: column; gap: 6px;">
+          <span style="font-size: 11px; line-height: 16px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: #64748b;">Applied</span>
+          <div style="display: flex; align-items: flex-end; justify-content: space-between;">
+            <span class="mono" style="font-size: 24px; line-height: 30px; font-weight: 600; color: #131b2e;">21</span>
+            <svg width="56" height="22" viewBox="0 0 56 22"><polyline points="0,20 9,18 18,19 27,15 36,14 45,12 56,11" fill="none" stroke="#94a3b8" stroke-width="1.5" stroke-linejoin="round"></polyline></svg>
+          </div>
+        </div>
+        <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; box-shadow: 0 1px 2px 0 rgba(0,0,0,0.05); padding: 14px 16px; display: flex; flex-direction: column; gap: 6px;">
+          <span style="font-size: 11px; line-height: 16px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: #64748b;">Responses</span>
+          <div style="display: flex; align-items: flex-end; justify-content: space-between;">
+            <span class="mono" style="font-size: 24px; line-height: 30px; font-weight: 600; color: #131b2e;">6</span>
+            <svg width="56" height="22" viewBox="0 0 56 22"><polyline points="0,20 9,20 18,17 27,18 36,15 45,15 56,13" fill="none" stroke="#94a3b8" stroke-width="1.5" stroke-linejoin="round"></polyline></svg>
+          </div>
+        </div>
+        <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; box-shadow: 0 1px 2px 0 rgba(0,0,0,0.05); padding: 14px 16px; display: flex; flex-direction: column; gap: 6px;">
+          <span style="font-size: 11px; line-height: 16px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: #64748b;">Today</span>
+          <div style="display: flex; align-items: baseline; gap: 4px;">
+            <span class="mono" style="font-size: 24px; line-height: 30px; font-weight: 600; color: #131b2e;">3</span>
+            <span class="mono" style="font-size: 13px; color: #94a3b8;">/ 10</span>
+          </div>
+          <div style="height: 4px; border-radius: 9999px; background: #f1f5f9; overflow: hidden;"><div style="width: 30%; height: 4px; background: #64748b;"></div></div>
+          <span style="font-size: 11px; line-height: 14px; color: #64748b;">submitted · daily cap</span>
+        </div>
+      </div>
+
+      <!-- Pipeline + Needs you / Activity -->
+      <div style="display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: 24px; align-items: start;">
+        <section style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; box-shadow: 0 1px 2px 0 rgba(0,0,0,0.05);">
+          <div style="padding: 14px 16px; border-bottom: 1px solid #f1f5f9; display: flex; align-items: center; justify-content: space-between;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <span style="font-size: 14px; line-height: 20px; font-weight: 600; color: #131b2e;">Pipeline</span>
+              <span style="display: inline-flex; align-items: center; gap: 6px; padding: 2px 8px; border-radius: 4px; font-size: 11px; line-height: 16px; font-weight: 500; background: #f0f9ff; color: #0369a1; border: 1px solid #bae6fd;"><span style="width: 6px; height: 6px; border-radius: 9999px; background: #0ea5e9;"></span>Running</span>
+            </div>
+            <span class="mono" style="font-size: 12px; color: #64748b;">started 17:02</span>
+          </div>
+          <div style="padding: 20px 16px; display: flex; flex-direction: column; gap: 20px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <span style="width: 22px; height: 22px; border-radius: 9999px; background: #ecfdf5; border: 1px solid #a7f3d0; display: flex; align-items: center; justify-content: center;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#047857" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"></path></svg></span>
+                <span style="font-size: 13px; color: #334155;">Discover</span>
+              </div>
+              <div style="flex-grow: 1; height: 2px; background: #a7f3d0;"></div>
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <span style="width: 22px; height: 22px; border-radius: 9999px; background: #ecfdf5; border: 1px solid #a7f3d0; display: flex; align-items: center; justify-content: center;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#047857" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"></path></svg></span>
+                <span style="font-size: 13px; color: #334155;">Clean</span>
+              </div>
+              <div style="flex-grow: 1; height: 2px; background: #a7f3d0;"></div>
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <span style="width: 22px; height: 22px; border-radius: 9999px; background: #ecfdf5; border: 1px solid #a7f3d0; display: flex; align-items: center; justify-content: center;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#047857" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"></path></svg></span>
+                <span style="font-size: 13px; color: #334155;">Filter</span>
+              </div>
+              <div style="flex-grow: 1; height: 2px; background: #bae6fd;"></div>
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <span class="mono" style="width: 22px; height: 22px; border-radius: 9999px; background: #0ea5e9; box-shadow: 0 0 0 4px #e0f2fe; color: #ffffff; font-size: 11px; font-weight: 600; display: flex; align-items: center; justify-content: center;">4</span>
+                <span style="font-size: 13px; font-weight: 600; color: #0369a1;">Score</span>
+              </div>
+              <div style="flex-grow: 1; height: 2px; background: #e2e8f0;"></div>
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <span class="mono" style="width: 22px; height: 22px; border-radius: 9999px; background: #f8fafc; border: 1px solid #e2e8f0; color: #94a3b8; font-size: 11px; font-weight: 600; display: flex; align-items: center; justify-content: center;">5</span>
+                <span style="font-size: 13px; color: #94a3b8;">Ready</span>
+              </div>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 6px;">
+              <div style="height: 6px; border-radius: 9999px; background: #f1f5f9; overflow: hidden;"><div style="width: 69%; height: 6px; background: #0ea5e9; border-radius: 9999px;"></div></div>
+              <div style="display: flex; justify-content: space-between; font-size: 12px; color: #64748b;"><span>Scoring shortlisted candidates</span><span class="mono">18 of 40</span></div>
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 0; border: 1px solid #f1f5f9; border-radius: 8px;">
+              <div style="padding: 10px 14px; display: flex; flex-direction: column; gap: 2px;"><span style="font-size: 11px; line-height: 16px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: #64748b;">Found</span><span class="mono" style="font-size: 18px; line-height: 24px; font-weight: 600;">64</span></div>
+              <div style="padding: 10px 14px; display: flex; flex-direction: column; gap: 2px; border-left: 1px solid #f1f5f9;"><span style="font-size: 11px; line-height: 16px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: #64748b;">Duplicates</span><span class="mono" style="font-size: 18px; line-height: 24px; font-weight: 600;">11</span></div>
+              <div style="padding: 10px 14px; display: flex; flex-direction: column; gap: 2px; border-left: 1px solid #f1f5f9;"><span style="font-size: 11px; line-height: 16px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: #64748b;">Passed</span><span class="mono" style="font-size: 18px; line-height: 24px; font-weight: 600;">29</span></div>
+              <div style="padding: 10px 14px; display: flex; flex-direction: column; gap: 2px; border-left: 1px solid #f1f5f9;"><span style="font-size: 11px; line-height: 16px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: #64748b;">Scored</span><span class="mono" style="font-size: 18px; line-height: 24px; font-weight: 600;">18<span style="font-size: 12px; font-weight: 400; color: #94a3b8;"> / 40</span></span></div>
+              <div style="padding: 10px 14px; display: flex; flex-direction: column; gap: 2px; border-left: 1px solid #f1f5f9;"><span style="font-size: 11px; line-height: 16px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: #64748b;">Shortlisted</span><span class="mono" style="font-size: 18px; line-height: 24px; font-weight: 600;">7</span></div>
+            </div>
+            <div style="display: flex; flex-direction: column;">
+              <span style="font-size: 11px; line-height: 16px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: #64748b; margin-bottom: 4px;">Live activity · this run</span>
+              <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #f1f5f9; font-size: 13px; color: #334155;"><span>Scored Atlassian — Staff SRE · 86</span><span class="mono" style="font-size: 12px; color: #94a3b8;">17:24</span></div>
+              <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #f1f5f9; font-size: 13px; color: #334155;"><span>Scored Razorpay — Platform Engineer · 71</span><span class="mono" style="font-size: 12px; color: #94a3b8;">17:23</span></div>
+              <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #f1f5f9; font-size: 13px; color: #334155;"><span>Hard filter dropped 4 jobs (location, seniority)</span><span class="mono" style="font-size: 12px; color: #94a3b8;">17:09</span></div>
+              <div style="display: flex; justify-content: space-between; padding: 8px 0; font-size: 13px; color: #334155;"><span>Found 64 jobs from LinkedIn, Naukri and Greenhouse</span><span class="mono" style="font-size: 12px; color: #94a3b8;">17:04</span></div>
+            </div>
+          </div>
+        </section>
+
+        <div style="display: flex; flex-direction: column; gap: 24px;">
+          <section style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; box-shadow: 0 1px 2px 0 rgba(0,0,0,0.05);">
+            <div style="padding: 14px 16px; border-bottom: 1px solid #f1f5f9; font-size: 14px; line-height: 20px; font-weight: 600;">Needs you</div>
+            <div style="display: flex; align-items: flex-start; gap: 12px; padding: 12px 16px; border-bottom: 1px solid #f1f5f9;">
+              <span style="width: 28px; height: 28px; flex-shrink: 0; border-radius: 9999px; background: #fffbeb; border: 1px solid #fde68a; display: flex; align-items: center; justify-content: center;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#b45309" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16v11H9l-5 4z"></path></svg></span>
+              <div style="flex-grow: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px;">
+                <span style="font-size: 13px; line-height: 18px; font-weight: 500; color: #131b2e;">Stripe · Senior SRE is waiting on you</span>
+                <span style="font-size: 12px; line-height: 16px; color: #64748b;">Review before applying</span>
+              </div>
+              <a href="#" style="font-size: 13px; font-weight: 500;">Answer</a>
+            </div>
+            <div style="display: flex; align-items: flex-start; gap: 12px; padding: 12px 16px; border-bottom: 1px solid #f1f5f9;">
+              <span style="width: 28px; height: 28px; flex-shrink: 0; border-radius: 9999px; background: #f1f5f9; border: 1px solid #e2e8f0; display: flex; align-items: center; justify-content: center;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#475569" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 5v14l11-7z"></path></svg></span>
+              <div style="flex-grow: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px;">
+                <span style="font-size: 13px; line-height: 18px; font-weight: 500; color: #131b2e;">2 sessions can resume</span>
+                <span style="font-size: 12px; line-height: 16px; color: #64748b;">Interrupted — continue where they left off</span>
+              </div>
+              <a href="#" style="font-size: 13px; font-weight: 500;">Review</a>
+            </div>
+            <div style="display: flex; align-items: flex-start; gap: 12px; padding: 12px 16px;">
+              <span style="width: 28px; height: 28px; flex-shrink: 0; border-radius: 9999px; background: #fff1f2; border: 1px solid #fecdd3; display: flex; align-items: center; justify-content: center;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#be123c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8v5M12 16.5v.5M10.3 3.9L2.5 17.5A2 2 0 0 0 4.2 20.5h15.6a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"></path></svg></span>
+              <div style="flex-grow: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px;">
+                <span style="font-size: 13px; line-height: 18px; font-weight: 500; color: #131b2e;">Swiggy · SRE II failed</span>
+                <span class="mono" style="font-size: 12px; line-height: 16px; color: #64748b;">resume_limit</span>
+              </div>
+              <a href="#" style="font-size: 13px; font-weight: 500;">Open</a>
+            </div>
+          </section>
+
+          <section style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; box-shadow: 0 1px 2px 0 rgba(0,0,0,0.05);">
+            <div style="padding: 14px 16px; border-bottom: 1px solid #f1f5f9; font-size: 14px; line-height: 20px; font-weight: 600;">Activity</div>
+            <div style="padding: 4px 16px 8px; display: flex; flex-direction: column;">
+              <div style="display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid #f1f5f9;">
+                <span style="width: 20px; height: 20px; flex-shrink: 0; border-radius: 9999px; background: #f1f5f9; display: flex; align-items: center; justify-content: center;"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#475569" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h8l4 4v14H6zM14 3v4h4"></path></svg></span>
+                <div style="flex-grow: 1; min-width: 0; font-size: 13px; line-height: 18px; color: #334155;">Draft ready <span style="color: #64748b;">· Razorpay, Platform Engineer</span></div>
+                <span class="mono" style="font-size: 11px; color: #94a3b8;">4m</span>
+              </div>
+              <div style="display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid #f1f5f9;">
+                <span style="width: 20px; height: 20px; flex-shrink: 0; border-radius: 9999px; background: #f1f5f9; display: flex; align-items: center; justify-content: center;"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#475569" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 20c1.5-4 4.5-6 8-6s6.5 2 8 6"></path></svg></span>
+                <div style="flex-grow: 1; min-width: 0; font-size: 13px; line-height: 18px; color: #334155;">You started applying <span style="color: #64748b;">· Stripe, Senior SRE</span></div>
+                <span class="mono" style="font-size: 11px; color: #94a3b8;">18m</span>
+              </div>
+              <div style="display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid #f1f5f9;">
+                <span style="width: 20px; height: 20px; flex-shrink: 0; border-radius: 9999px; background: #f1f5f9; display: flex; align-items: center; justify-content: center;"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#475569" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 5h4v14H6zM14 5h4v14h-4z"></path></svg></span>
+                <div style="flex-grow: 1; min-width: 0; font-size: 13px; line-height: 18px; color: #334155;">Session resumable <span style="color: #64748b;">· Freshworks, DevOps Lead</span></div>
+                <span class="mono" style="font-size: 11px; color: #94a3b8;">1h</span>
+              </div>
+              <div style="display: flex; align-items: center; gap: 10px; padding: 8px 0;">
+                <span style="width: 20px; height: 20px; flex-shrink: 0; border-radius: 9999px; background: #fff1f2; display: flex; align-items: center; justify-content: center;"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#be123c" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12M18 6L6 18"></path></svg></span>
+                <div style="flex-grow: 1; min-width: 0; font-size: 13px; line-height: 18px; color: #334155;">Resume limit reached <span style="color: #64748b;">· Swiggy, SRE II</span></div>
+                <span class="mono" style="font-size: 11px; color: #94a3b8;">3h</span>
+              </div>
+            </div>
+          </section>
+        </div>
+      </div>
+
+      <!-- Recent discoveries -->
+      <section style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; box-shadow: 0 1px 2px 0 rgba(0,0,0,0.05); overflow: hidden;">
+        <div style="padding: 14px 16px; border-bottom: 1px solid #e2e8f0; display: flex; align-items: center; justify-content: space-between;">
+          <span style="font-size: 14px; line-height: 20px; font-weight: 600;">Recent discoveries</span>
+          <a href="#" style="font-size: 13px; font-weight: 500;">Open Applications →</a>
+        </div>
+        <table style="width: 100%; border-collapse: collapse; text-align: left;">
+          <thead>
+            <tr style="background: #f8fafc; border-bottom: 1px solid #e2e8f0;">
+              <th style="padding: 10px 16px; font-size: 11px; line-height: 16px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: #64748b;">Verdict</th>
+              <th style="padding: 10px 16px; font-size: 11px; line-height: 16px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: #64748b;">Job title</th>
+              <th style="padding: 10px 16px; font-size: 11px; line-height: 16px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: #64748b;">Company</th>
+              <th style="padding: 10px 16px; font-size: 11px; line-height: 16px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: #64748b;">Source</th>
+              <th style="padding: 10px 16px; font-size: 11px; line-height: 16px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: #64748b;">Score</th>
+              <th style="padding: 10px 16px; font-size: 11px; line-height: 16px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: #64748b;">Location</th>
+            </tr>
+          </thead>
+          <tbody style="font-size: 13px; line-height: 18px;">
+            <tr style="height: 40px; border-bottom: 1px solid #f1f5f9;">
+              <td style="padding: 8px 16px;"><span style="display: inline-flex; padding: 2px 8px; border-radius: 4px; font-size: 11px; line-height: 16px; font-weight: 500; background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0;">Submit</span></td>
+              <td style="padding: 8px 16px; font-weight: 500; color: #0f172a;">Staff SRE</td>
+              <td style="padding: 8px 16px; color: #334155;">Atlassian</td>
+              <td style="padding: 8px 16px;"><span style="padding: 2px 6px; border-radius: 4px; background: #f1f5f9; color: #475569; font-size: 11px;">Greenhouse</span></td>
+              <td class="mono" style="padding: 8px 16px; font-weight: 600; color: #0f172a;">86<span style="font-weight: 400; font-size: 11px; color: #94a3b8;">/100</span></td>
+              <td style="padding: 8px 16px; color: #475569;">Bengaluru</td>
+            </tr>
+            <tr style="height: 40px; border-bottom: 1px solid #f1f5f9;">
+              <td style="padding: 8px 16px;"><span style="display: inline-flex; padding: 2px 8px; border-radius: 4px; font-size: 11px; line-height: 16px; font-weight: 500; background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0;">Submit</span></td>
+              <td style="padding: 8px 16px; font-weight: 500; color: #0f172a;">Backend Engineer</td>
+              <td style="padding: 8px 16px; color: #334155;">Wise</td>
+              <td style="padding: 8px 16px;"><span style="padding: 2px 6px; border-radius: 4px; background: #f1f5f9; color: #475569; font-size: 11px;">LinkedIn</span></td>
+              <td class="mono" style="padding: 8px 16px; font-weight: 600; color: #0f172a;">78<span style="font-weight: 400; font-size: 11px; color: #94a3b8;">/100</span></td>
+              <td style="padding: 8px 16px; color: #475569;">Remote (India)</td>
+            </tr>
+            <tr style="height: 40px; border-bottom: 1px solid #f1f5f9;">
+              <td style="padding: 8px 16px;"><span style="display: inline-flex; padding: 2px 8px; border-radius: 4px; font-size: 11px; line-height: 16px; font-weight: 500; background: #fffbeb; color: #b45309; border: 1px solid #fde68a;">Hold</span></td>
+              <td style="padding: 8px 16px; font-weight: 500; color: #0f172a;">Platform Engineer</td>
+              <td style="padding: 8px 16px; color: #334155;">Razorpay</td>
+              <td style="padding: 8px 16px;"><span style="padding: 2px 6px; border-radius: 4px; background: #f1f5f9; color: #475569; font-size: 11px;">LinkedIn</span></td>
+              <td class="mono" style="padding: 8px 16px; font-weight: 600; color: #0f172a;">71<span style="font-weight: 400; font-size: 11px; color: #94a3b8;">/100</span></td>
+              <td style="padding: 8px 16px; color: #475569;">Bengaluru</td>
+            </tr>
+            <tr style="height: 40px;">
+              <td style="padding: 8px 16px;"><span style="display: inline-flex; padding: 2px 8px; border-radius: 4px; font-size: 11px; line-height: 16px; font-weight: 500; background: #fff1f2; color: #be123c; border: 1px solid #fecdd3;">Skip</span></td>
+              <td style="padding: 8px 16px; font-weight: 500; color: #0f172a;">DevOps Engineer</td>
+              <td style="padding: 8px 16px; color: #334155;">InMobi</td>
+              <td style="padding: 8px 16px;"><span style="padding: 2px 6px; border-radius: 4px; background: #f1f5f9; color: #475569; font-size: 11px;">LinkedIn</span></td>
+              <td class="mono" style="padding: 8px 16px; font-weight: 600; color: #0f172a;">48<span style="font-weight: 400; font-size: 11px; color: #94a3b8;">/100</span></td>
+              <td style="padding: 8px 16px; color: #475569;">Chennai</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <!-- Source / distribution / outcomes -->
+      <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; align-items: start;">
+        <section style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; box-shadow: 0 1px 2px 0 rgba(0,0,0,0.05);">
+          <div style="padding: 14px 16px; border-bottom: 1px solid #f1f5f9; font-size: 14px; line-height: 20px; font-weight: 600;">Source performance</div>
+          <table style="width: 100%; border-collapse: collapse; font-size: 12px; line-height: 16px;">
+            <thead>
+              <tr style="border-bottom: 1px solid #f1f5f9;">
+                <th style="padding: 8px 16px; text-align: left; font-size: 10px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: #64748b;">Source</th>
+                <th style="padding: 8px 6px; text-align: right; font-size: 10px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: #64748b;">Found</th>
+                <th style="padding: 8px 6px; text-align: right; font-size: 10px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: #64748b;">Pass</th>
+                <th style="padding: 8px 6px; text-align: right; font-size: 10px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: #64748b;">Applied</th>
+                <th style="padding: 8px 16px 8px 6px; text-align: right; font-size: 10px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: #64748b;">Resp.</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr style="border-bottom: 1px solid #f1f5f9;"><td style="padding: 9px 16px; font-weight: 500;">LinkedIn</td><td class="mono" style="padding: 9px 6px; text-align: right;">214</td><td class="mono" style="padding: 9px 6px; text-align: right;">48%</td><td class="mono" style="padding: 9px 6px; text-align: right;">11</td><td class="mono" style="padding: 9px 16px 9px 6px; text-align: right;">27%</td></tr>
+              <tr style="border-bottom: 1px solid #f1f5f9;"><td style="padding: 9px 16px; font-weight: 500;">Naukri</td><td class="mono" style="padding: 9px 6px; text-align: right;">131</td><td class="mono" style="padding: 9px 6px; text-align: right;">39%</td><td class="mono" style="padding: 9px 6px; text-align: right;">0</td><td class="mono" style="padding: 9px 16px 9px 6px; text-align: right; color: #94a3b8;">—</td></tr>
+              <tr><td style="padding: 9px 16px; font-weight: 500;">Greenhouse</td><td class="mono" style="padding: 9px 6px; text-align: right;">67</td><td class="mono" style="padding: 9px 6px; text-align: right;">61%</td><td class="mono" style="padding: 9px 6px; text-align: right;">10</td><td class="mono" style="padding: 9px 16px 9px 6px; text-align: right;">40%</td></tr>
+            </tbody>
+          </table>
+        </section>
+
+        <section style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; box-shadow: 0 1px 2px 0 rgba(0,0,0,0.05);">
+          <div style="padding: 14px 16px; border-bottom: 1px solid #f1f5f9; font-size: 14px; line-height: 20px; font-weight: 600;">Score distribution</div>
+          <div style="padding: 14px 16px; display: flex; flex-direction: column; gap: 12px;">
+            <div style="display: flex; flex-direction: column; gap: 4px;"><div style="display: flex; justify-content: space-between; font-size: 12px; color: #475569;"><span>80–100 High</span><span class="mono">9%</span></div><div style="height: 6px; border-radius: 9999px; background: #f1f5f9;"><div style="width: 9%; height: 6px; border-radius: 9999px; background: #475569;"></div></div></div>
+            <div style="display: flex; flex-direction: column; gap: 4px;"><div style="display: flex; justify-content: space-between; font-size: 12px; color: #475569;"><span>60–79 Good</span><span class="mono">24%</span></div><div style="height: 6px; border-radius: 9999px; background: #f1f5f9;"><div style="width: 24%; height: 6px; border-radius: 9999px; background: #64748b;"></div></div></div>
+            <div style="display: flex; flex-direction: column; gap: 4px;"><div style="display: flex; justify-content: space-between; font-size: 12px; color: #475569;"><span>40–59 Fair</span><span class="mono">41%</span></div><div style="height: 6px; border-radius: 9999px; background: #f1f5f9;"><div style="width: 41%; height: 6px; border-radius: 9999px; background: #94a3b8;"></div></div></div>
+            <div style="display: flex; flex-direction: column; gap: 4px;"><div style="display: flex; justify-content: space-between; font-size: 12px; color: #475569;"><span>0–39 Low</span><span class="mono">26%</span></div><div style="height: 6px; border-radius: 9999px; background: #f1f5f9;"><div style="width: 26%; height: 6px; border-radius: 9999px; background: #cbd5e1;"></div></div></div>
+          </div>
+        </section>
+
+        <section style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; box-shadow: 0 1px 2px 0 rgba(0,0,0,0.05);">
+          <div style="padding: 14px 16px; border-bottom: 1px solid #f1f5f9; font-size: 14px; line-height: 20px; font-weight: 600;">Outcomes this month</div>
+          <div style="padding: 12px 16px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px 12px; border-bottom: 1px solid #f1f5f9;">
+            <div style="display: flex; flex-direction: column;"><span style="font-size: 11px; color: #64748b;">Applied</span><span class="mono" style="font-size: 16px; font-weight: 600;">21</span></div>
+            <div style="display: flex; flex-direction: column;"><span style="font-size: 11px; color: #64748b;">Responses</span><span class="mono" style="font-size: 16px; font-weight: 600;">6</span></div>
+            <div style="display: flex; flex-direction: column;"><span style="font-size: 11px; color: #64748b;">Interviews</span><span class="mono" style="font-size: 16px; font-weight: 600;">3</span></div>
+            <div style="display: flex; flex-direction: column;"><span style="font-size: 11px; color: #64748b;">Offers</span><span class="mono" style="font-size: 16px; font-weight: 600;">1</span></div>
+            <div style="display: flex; flex-direction: column;"><span style="font-size: 11px; color: #64748b;">Callback</span><span class="mono" style="font-size: 16px; font-weight: 600;">28.6%</span></div>
+            <div style="display: flex; flex-direction: column;"><span style="font-size: 11px; color: #64748b;">Interview</span><span class="mono" style="font-size: 16px; font-weight: 600;">14.3%</span></div>
+          </div>
+          <div style="padding: 4px 16px 8px; display: flex; flex-direction: column;">
+            <div style="display: flex; align-items: center; justify-content: space-between; padding: 7px 0; border-bottom: 1px solid #f1f5f9; font-size: 12px;"><span style="color: #334155;">Atlassian · Staff SRE</span><span style="display: flex; align-items: center; gap: 8px;"><span style="padding: 1px 6px; border-radius: 4px; font-size: 11px; font-weight: 500; background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0;">Interview</span><span class="mono" style="font-size: 11px; color: #94a3b8;">09-11</span></span></div>
+            <div style="display: flex; align-items: center; justify-content: space-between; padding: 7px 0; border-bottom: 1px solid #f1f5f9; font-size: 12px;"><span style="color: #334155;">Postman · SRE</span><span style="display: flex; align-items: center; gap: 8px;"><span style="padding: 1px 6px; border-radius: 4px; font-size: 11px; font-weight: 500; background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0;">No response</span><span class="mono" style="font-size: 11px; color: #94a3b8;">09-08</span></span></div>
+            <div style="display: flex; align-items: center; justify-content: space-between; padding: 7px 0; font-size: 12px;"><span style="color: #334155;">Zomato · Infra Engineer</span><span style="display: flex; align-items: center; gap: 8px;"><span style="padding: 1px 6px; border-radius: 4px; font-size: 11px; font-weight: 500; background: #fff1f2; color: #be123c; border: 1px solid #fecdd3;">Rejected</span><span class="mono" style="font-size: 11px; color: #94a3b8;">09-05</span></span></div>
+          </div>
+        </section>
+      </div>
+    </main>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

@@ -1,0 +1,142 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;600&amp;display=swap">
+  <style>
+    body { margin: 0; font-family: Inter, system-ui, -apple-system, 'Segoe UI', sans-serif; background: #faf8ff; color: #131b2e; }
+    a { color: #3525cd; text-decoration: none; } a:hover { color: #4f46e5; }
+    .mono { font-family: 'JetBrains Mono', ui-monospace, 'Cascadia Code', monospace; font-variant-numeric: tabular-nums; }
+  </style>
+</helmet>
+<div style="width: 1440px; min-height: 1040px; display: flex; background: #faf8ff;">
+  <div style="width: 240px; flex-shrink: 0; background: #ffffff; border-right: 1px solid #e2e8f0;">
+    <dc-import name="Sidebar" active="dashboard" variant="firstrun" hint-size="240px,900px"></dc-import>
+  </div>
+  <div style="flex-grow: 1; display: flex; flex-direction: column; min-width: 0;">
+    <header style="height: 56px; box-sizing: border-box; background: #ffffff; border-bottom: 1px solid #e2e8f0; padding: 0 32px; display: flex; align-items: center; justify-content: space-between;">
+      <nav style="display: flex; align-items: center; gap: 8px; font-size: 13px; line-height: 18px;">
+        <span style="color: #64748b;">Workspace</span>
+        <span class="mono" style="color: #94a3b8;">›</span>
+        <span style="font-weight: 500; color: #0f172a;">Dashboard</span>
+      </nav>
+      <button type="button" style="height: 32px; padding: 0 14px; border-radius: 8px; border: none; background: #3525cd; color: #ffffff; font: 500 13px/18px Inter, system-ui, sans-serif; display: flex; align-items: center; gap: 6px; box-shadow: 0 1px 2px 0 rgba(0,0,0,0.05); cursor: pointer;">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="#ffffff"><path d="M8 5v14l11-7z"></path></svg>
+        Run pipeline
+      </button>
+    </header>
+
+    <main style="padding: 32px; display: flex; flex-direction: column; gap: 24px; max-width: 1200px; box-sizing: border-box;">
+      <div style="display: flex; flex-direction: column;">
+        <h1 style="margin: 0; font-size: 24px; line-height: 32px; font-weight: 600; letter-spacing: -0.025em; color: #131b2e;">Dashboard</h1>
+        <p style="margin: 2px 0 0; font-size: 14px; line-height: 20px; color: #464555;">How your search is performing</p>
+      </div>
+
+      <div style="display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 16px;">
+        <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; box-shadow: 0 1px 2px 0 rgba(0,0,0,0.05); padding: 14px 16px; display: flex; flex-direction: column; gap: 6px;"><span style="font-size: 11px; line-height: 16px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: #64748b;">Discovered</span><span class="mono" style="font-size: 24px; line-height: 30px; font-weight: 600; color: #94a3b8;">0</span></div>
+        <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; box-shadow: 0 1px 2px 0 rgba(0,0,0,0.05); padding: 14px 16px; display: flex; flex-direction: column; gap: 6px;"><span style="font-size: 11px; line-height: 16px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: #64748b;">After filter</span><span class="mono" style="font-size: 24px; line-height: 30px; font-weight: 600; color: #94a3b8;">0</span></div>
+        <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; box-shadow: 0 1px 2px 0 rgba(0,0,0,0.05); padding: 14px 16px; display: flex; flex-direction: column; gap: 6px;"><span style="font-size: 11px; line-height: 16px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: #64748b;">Shortlisted</span><span class="mono" style="font-size: 24px; line-height: 30px; font-weight: 600; color: #94a3b8;">0</span></div>
+        <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; box-shadow: 0 1px 2px 0 rgba(0,0,0,0.05); padding: 14px 16px; display: flex; flex-direction: column; gap: 6px;"><span style="font-size: 11px; line-height: 16px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: #64748b;">Applied</span><span class="mono" style="font-size: 24px; line-height: 30px; font-weight: 600; color: #94a3b8;">0</span></div>
+        <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; box-shadow: 0 1px 2px 0 rgba(0,0,0,0.05); padding: 14px 16px; display: flex; flex-direction: column; gap: 6px;"><span style="font-size: 11px; line-height: 16px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: #64748b;">Responses</span><span class="mono" style="font-size: 24px; line-height: 30px; font-weight: 600; color: #94a3b8;">0</span></div>
+        <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; box-shadow: 0 1px 2px 0 rgba(0,0,0,0.05); padding: 14px 16px; display: flex; flex-direction: column; gap: 6px;">
+          <span style="font-size: 11px; line-height: 16px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: #64748b;">Today</span>
+          <div style="display: flex; align-items: baseline; gap: 4px;"><span class="mono" style="font-size: 24px; line-height: 30px; font-weight: 600; color: #94a3b8;">0</span><span class="mono" style="font-size: 13px; color: #94a3b8;">/ 10</span></div>
+          <div style="height: 4px; border-radius: 9999px; background: #eaedff;"></div>
+          <span style="font-size: 11px; line-height: 14px; color: #64748b;">submitted · daily cap</span>
+        </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: 24px; align-items: start;">
+        <section style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; box-shadow: 0 1px 2px 0 rgba(0,0,0,0.05);">
+          <div style="padding: 14px 16px; border-bottom: 1px solid #f1f5f9; display: flex; align-items: center; justify-content: space-between;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <span style="font-size: 14px; line-height: 20px; font-weight: 600;">Pipeline</span>
+              <span style="display: inline-flex; align-items: center; gap: 6px; padding: 2px 8px; border-radius: 4px; font-size: 11px; line-height: 16px; font-weight: 500; background: #fff1f2; color: #be123c; border: 1px solid #fecdd3;"><span style="width: 6px; height: 6px; border-radius: 9999px; background: #e11d48;"></span>Error</span>
+            </div>
+            <span class="mono" style="font-size: 12px; color: #64748b;">started 09:42</span>
+          </div>
+          <div style="padding: 20px 16px; display: flex; flex-direction: column; gap: 20px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <span style="width: 22px; height: 22px; border-radius: 9999px; background: #e11d48; color: #ffffff; display: flex; align-items: center; justify-content: center;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="3" stroke-linecap="round"><path d="M12 6v8M12 18v.5"></path></svg></span>
+                <span style="font-size: 13px; font-weight: 600; color: #be123c;">Discover</span>
+              </div>
+              <div style="flex-grow: 1; height: 2px; background: #e2e8f0;"></div>
+              <div style="display: flex; align-items: center; gap: 8px;"><span class="mono" style="width: 22px; height: 22px; border-radius: 9999px; background: #f8fafc; border: 1px solid #e2e8f0; color: #94a3b8; font-size: 11px; font-weight: 600; display: flex; align-items: center; justify-content: center;">2</span><span style="font-size: 13px; color: #94a3b8;">Clean</span></div>
+              <div style="flex-grow: 1; height: 2px; background: #e2e8f0;"></div>
+              <div style="display: flex; align-items: center; gap: 8px;"><span class="mono" style="width: 22px; height: 22px; border-radius: 9999px; background: #f8fafc; border: 1px solid #e2e8f0; color: #94a3b8; font-size: 11px; font-weight: 600; display: flex; align-items: center; justify-content: center;">3</span><span style="font-size: 13px; color: #94a3b8;">Filter</span></div>
+              <div style="flex-grow: 1; height: 2px; background: #e2e8f0;"></div>
+              <div style="display: flex; align-items: center; gap: 8px;"><span class="mono" style="width: 22px; height: 22px; border-radius: 9999px; background: #f8fafc; border: 1px solid #e2e8f0; color: #94a3b8; font-size: 11px; font-weight: 600; display: flex; align-items: center; justify-content: center;">4</span><span style="font-size: 13px; color: #94a3b8;">Score</span></div>
+              <div style="flex-grow: 1; height: 2px; background: #e2e8f0;"></div>
+              <div style="display: flex; align-items: center; gap: 8px;"><span class="mono" style="width: 22px; height: 22px; border-radius: 9999px; background: #f8fafc; border: 1px solid #e2e8f0; color: #94a3b8; font-size: 11px; font-weight: 600; display: flex; align-items: center; justify-content: center;">5</span><span style="font-size: 13px; color: #94a3b8;">Ready</span></div>
+            </div>
+            <div style="border-radius: 8px; background: #fff1f2; border: 1px solid rgba(254,205,211,0.8); padding: 12px; display: flex; align-items: flex-start; gap: 10px;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#be123c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0; margin-top: 1px;"><circle cx="12" cy="12" r="9"></circle><path d="M12 7.5v5M12 16v.5"></path></svg>
+              <div style="font-size: 13px; line-height: 18px; color: #be123c;"><span style="font-weight: 600;">Run failed:</span> Apify actor failed: APIFY_TOKEN is missing or invalid.</div>
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); border: 1px solid #f1f5f9; border-radius: 8px;">
+              <div style="padding: 10px 14px; display: flex; flex-direction: column; gap: 2px;"><span style="font-size: 11px; line-height: 16px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: #64748b;">Found</span><span class="mono" style="font-size: 18px; line-height: 24px; font-weight: 600; color: #94a3b8;">0</span></div>
+              <div style="padding: 10px 14px; display: flex; flex-direction: column; gap: 2px; border-left: 1px solid #f1f5f9;"><span style="font-size: 11px; line-height: 16px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: #64748b;">Duplicates</span><span class="mono" style="font-size: 18px; line-height: 24px; font-weight: 600; color: #94a3b8;">0</span></div>
+              <div style="padding: 10px 14px; display: flex; flex-direction: column; gap: 2px; border-left: 1px solid #f1f5f9;"><span style="font-size: 11px; line-height: 16px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: #64748b;">Passed</span><span class="mono" style="font-size: 18px; line-height: 24px; font-weight: 600; color: #94a3b8;">0</span></div>
+              <div style="padding: 10px 14px; display: flex; flex-direction: column; gap: 2px; border-left: 1px solid #f1f5f9;"><span style="font-size: 11px; line-height: 16px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: #64748b;">Scored</span><span class="mono" style="font-size: 18px; line-height: 24px; font-weight: 600; color: #94a3b8;">0<span style="font-size: 12px; font-weight: 400;"> / 40</span></span></div>
+              <div style="padding: 10px 14px; display: flex; flex-direction: column; gap: 2px; border-left: 1px solid #f1f5f9;"><span style="font-size: 11px; line-height: 16px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: #64748b;">Shortlisted</span><span class="mono" style="font-size: 18px; line-height: 24px; font-weight: 600; color: #94a3b8;">0</span></div>
+            </div>
+            <span style="font-size: 13px; color: #64748b;">No activity in this run.</span>
+          </div>
+        </section>
+
+        <div style="display: flex; flex-direction: column; gap: 24px;">
+          <section style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; box-shadow: 0 1px 2px 0 rgba(0,0,0,0.05);">
+            <div style="padding: 14px 16px; border-bottom: 1px solid #f1f5f9; font-size: 14px; line-height: 20px; font-weight: 600;">Needs you</div>
+            <div style="padding: 24px 16px; display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center;">
+              <span style="width: 32px; height: 32px; border-radius: 9999px; background: #f1f5f9; display: flex; align-items: center; justify-content: center;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M8 12l3 3 5-6"></path></svg></span>
+              <span style="font-size: 13px; font-weight: 500; color: #1e293b;">Nothing needs you right now</span>
+            </div>
+          </section>
+          <section style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; box-shadow: 0 1px 2px 0 rgba(0,0,0,0.05);">
+            <div style="padding: 14px 16px; border-bottom: 1px solid #f1f5f9; font-size: 14px; line-height: 20px; font-weight: 600;">Activity</div>
+            <div style="padding: 24px 16px; display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center;">
+              <span style="width: 32px; height: 32px; border-radius: 9999px; background: #f1f5f9; display: flex; align-items: center; justify-content: center;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 13h5l1.5 3h5L16 13h5M5 5h14l2 8v6H3v-6z"></path></svg></span>
+              <span style="font-size: 13px; font-weight: 500; color: #1e293b;">No agent activity yet</span>
+            </div>
+          </section>
+        </div>
+      </div>
+
+      <section style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; box-shadow: 0 1px 2px 0 rgba(0,0,0,0.05);">
+        <div style="padding: 14px 16px; border-bottom: 1px solid #f1f5f9; display: flex; flex-direction: column; gap: 2px;">
+          <span style="font-size: 14px; line-height: 20px; font-weight: 600;">Get your first shortlist</span>
+          <span style="font-size: 13px; color: #64748b;">Four things before the agent can score and apply.</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-bottom: 1px solid #f1f5f9;">
+          <span style="width: 24px; height: 24px; flex-shrink: 0; border-radius: 9999px; background: #ecfdf5; border: 1px solid #a7f3d0; display: flex; align-items: center; justify-content: center;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#047857" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"></path></svg></span>
+          <span style="flex-grow: 1; font-size: 13px; color: #334155;">Career brief loaded — 3 target titles, 2 locations</span>
+          <a href="#" style="font-size: 13px; font-weight: 500;">Edit in Settings</a>
+        </div>
+        <div style="display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-bottom: 1px solid #f1f5f9; background: #fffbeb;">
+          <span style="width: 24px; height: 24px; flex-shrink: 0; border-radius: 9999px; background: #fef3c7; border: 1px solid #fde68a; display: flex; align-items: center; justify-content: center;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#b45309" stroke-width="3" stroke-linecap="round"><path d="M12 6v8M12 18v.5"></path></svg></span>
+          <span style="flex-grow: 1; font-size: 13px; color: #78350f;"><span style="font-weight: 600;">Facts: <span class="mono">6 of 10</span></span> — scoring is blocked below 10</span>
+          <button type="button" style="height: 32px; padding: 0 12px; border-radius: 8px; border: 1px solid #cbd5e1; background: #ffffff; color: #131b2e; font: 500 13px/18px Inter, system-ui, sans-serif; cursor: pointer;">Add facts</button>
+        </div>
+        <div style="display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-bottom: 1px solid #f1f5f9;">
+          <span style="width: 24px; height: 24px; flex-shrink: 0; border-radius: 9999px; background: #ecfdf5; border: 1px solid #a7f3d0; display: flex; align-items: center; justify-content: center;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#047857" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"></path></svg></span>
+          <span style="flex-grow: 1; font-size: 13px; color: #334155;">Master resume uploaded</span>
+          <a href="#" style="font-size: 13px; font-weight: 500;">View</a>
+        </div>
+        <div style="display: flex; align-items: center; gap: 12px; padding: 12px 16px;">
+          <span style="width: 24px; height: 24px; flex-shrink: 0; border-radius: 9999px; background: #f8fafc; border: 1px solid #cbd5e1;"></span>
+          <span style="flex-grow: 1; font-size: 13px; color: #334155;">Run the pipeline to discover and score jobs</span>
+          <button type="button" style="height: 32px; padding: 0 12px; border-radius: 8px; border: 1px solid #cbd5e1; background: #ffffff; color: #131b2e; font: 500 13px/18px Inter, system-ui, sans-serif; display: flex; align-items: center; gap: 6px; cursor: pointer;"><svg width="12" height="12" viewBox="0 0 24 24" fill="#64748b"><path d="M8 5v14l11-7z"></path></svg>Run pipeline</button>
+        </div>
+      </section>
+    </main>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

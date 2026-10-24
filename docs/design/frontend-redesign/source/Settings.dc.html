@@ -1,0 +1,140 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;600&amp;display=swap">
+  <style>
+    body { margin: 0; font-family: Inter, system-ui, -apple-system, 'Segoe UI', sans-serif; background: #faf8ff; color: #131b2e; }
+    a { color: #3525cd; text-decoration: none; } a:hover { color: #4f46e5; }
+    .mono { font-family: 'JetBrains Mono', ui-monospace, 'Cascadia Code', monospace; font-variant-numeric: tabular-nums; }
+    .card { background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; box-shadow: 0 1px 2px 0 rgba(0,0,0,0.05); }
+    .ch { padding: 14px 16px; border-bottom: 1px solid #f1f5f9; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    .ct { font-size: 14px; line-height: 20px; font-weight: 600; color: #131b2e; }
+    .btn { height: 32px; padding: 0 12px; border-radius: 8px; border: 1px solid #cbd5e1; background: #ffffff; color: #131b2e; font: 500 13px/18px Inter, system-ui, sans-serif; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; cursor: pointer; }
+    .pri { background: #3525cd; border-color: #3525cd; color: #ffffff; box-shadow: 0 1px 2px 0 rgba(0,0,0,0.05); }
+    .body { padding: 16px; display: flex; flex-direction: column; gap: 16px; }
+    .grid2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+    .f { display: flex; flex-direction: column; gap: 6px; }
+    .fl { font-size: 13px; line-height: 18px; font-weight: 500; color: #334155; }
+    .in { min-height: 36px; box-sizing: border-box; border: 1px solid #cbd5e1; border-radius: 8px; background: #ffffff; padding: 5px 6px; font-size: 13px; line-height: 18px; color: #131b2e; display: flex; flex-wrap: wrap; align-items: center; gap: 4px; }
+    .tag { height: 24px; padding: 0 4px 0 8px; border-radius: 4px; background: #f1f5f9; border: 1px solid #e2e8f0; font-size: 12px; color: #334155; display: inline-flex; align-items: center; gap: 4px; }
+    .ph { font-size: 13px; color: #94a3b8; padding: 0 4px; }
+    .help { font-size: 12px; line-height: 16px; color: #64748b; }
+    .nav { height: 34px; padding: 0 10px; border-radius: 6px; display: flex; align-items: center; font-size: 13px; color: #475569; }
+    .radio { border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px; display: flex; gap: 10px; align-items: flex-start; background: #ffffff; }
+    .radioon { border-color: #3525cd; box-shadow: 0 0 0 1px #3525cd inset; background: #fbfbff; }
+    .dotr { width: 16px; height: 16px; border-radius: 9999px; border: 1.5px solid #cbd5e1; box-sizing: border-box; flex-shrink: 0; margin-top: 1px; }
+  </style>
+</helmet>
+<div style="width: 1440px; min-height: 1760px; display: flex; background: #faf8ff; position: relative;">
+  <div style="width: 240px; flex-shrink: 0; background: #ffffff; border-right: 1px solid #e2e8f0;">
+    <dc-import name="Sidebar" active="settings" variant="running" hint-size="240px,900px"></dc-import>
+  </div>
+  <div style="flex-grow: 1; display: flex; flex-direction: column; min-width: 0;">
+    <header style="height: 56px; box-sizing: border-box; background: #ffffff; border-bottom: 1px solid #e2e8f0; padding: 0 32px; display: flex; align-items: center;">
+      <nav style="display: flex; align-items: center; gap: 8px; font-size: 13px; line-height: 18px;"><span style="color: #64748b;">Agent</span><span class="mono" style="color: #94a3b8;">›</span><span style="font-weight: 500; color: #0f172a;">Settings</span></nav>
+    </header>
+
+    <main style="padding: 32px 32px 96px; display: flex; flex-direction: column; gap: 20px; max-width: 1200px; box-sizing: border-box;">
+      <div style="display: flex; flex-direction: column;">
+        <h1 style="margin: 0; font-size: 24px; line-height: 32px; font-weight: 600; letter-spacing: -0.025em;">Settings</h1>
+        <p style="margin: 2px 0 0; font-size: 14px; line-height: 20px; color: #464555;">How the agent searches, filters, scores and paces itself. Changes take effect on the next run.</p>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 200px minmax(0, 1fr); gap: 32px; align-items: start;">
+        <nav style="display: flex; flex-direction: column; gap: 2px;">
+          <span class="nav" style="background: #eaedff; color: #3525cd; font-weight: 600;">Search</span>
+          <span class="nav">Filters &amp; eligibility</span>
+          <span class="nav">Apply pacing &amp; gate</span>
+          <span class="nav">Models &amp; budget</span>
+          <span class="nav">Candidate details</span>
+        </nav>
+
+        <div style="display: flex; flex-direction: column; gap: 20px;">
+          <section class="card">
+            <div class="ch"><span class="ct">Search</span></div>
+            <div class="body">
+              <div class="grid2">
+                <div class="f"><span class="fl">Target titles <span style="color: #be123c;">*</span></span><div class="in"><span class="tag">Senior SRE<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2.5" stroke-linecap="round"><path d="M7 7l10 10M17 7L7 17"></path></svg></span><span class="tag">Staff SRE<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2.5" stroke-linecap="round"><path d="M7 7l10 10M17 7L7 17"></path></svg></span><span class="tag">Platform Engineer<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2.5" stroke-linecap="round"><path d="M7 7l10 10M17 7L7 17"></path></svg></span><span class="ph">Add a title</span></div></div>
+                <div class="f"><span class="fl">Title families</span><div class="in"><span class="tag">sre<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2.5" stroke-linecap="round"><path d="M7 7l10 10M17 7L7 17"></path></svg></span><span class="tag">devops<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2.5" stroke-linecap="round"><path d="M7 7l10 10M17 7L7 17"></path></svg></span><span class="tag">platform<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2.5" stroke-linecap="round"><path d="M7 7l10 10M17 7L7 17"></path></svg></span></div><span class="help">The hard filter matches these against job titles.</span></div>
+                <div class="f"><span class="fl">Search locations <span style="color: #be123c;">*</span></span><div class="in"><span class="tag">Bengaluru<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2.5" stroke-linecap="round"><path d="M7 7l10 10M17 7L7 17"></path></svg></span><span class="tag">Remote, India<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2.5" stroke-linecap="round"><path d="M7 7l10 10M17 7L7 17"></path></svg></span></div><span class="help">What we ask sources for — each city multiplies daily Actor runs.</span></div>
+                <div class="f"><span class="fl">Accepted locations</span><div class="in"><span class="tag">Bengaluru<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2.5" stroke-linecap="round"><path d="M7 7l10 10M17 7L7 17"></path></svg></span><span class="tag">Chennai<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2.5" stroke-linecap="round"><path d="M7 7l10 10M17 7L7 17"></path></svg></span><span class="tag">Hyderabad<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2.5" stroke-linecap="round"><path d="M7 7l10 10M17 7L7 17"></path></svg></span><span class="tag">Remote<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2.5" stroke-linecap="round"><path d="M7 7l10 10M17 7L7 17"></path></svg></span></div><span class="help">What the hard filter accepts on the way back — usually a superset.</span></div>
+              </div>
+              <label style="display: flex; align-items: center; gap: 10px; font-size: 13px; color: #334155;"><span style="width: 32px; height: 18px; border-radius: 9999px; background: #3525cd; position: relative;"><span style="position: absolute; right: 2px; top: 2px; width: 14px; height: 14px; border-radius: 9999px; background: #ffffff;"></span></span>Remote acceptable</label>
+            </div>
+          </section>
+
+          <section class="card">
+            <div class="ch"><span class="ct">Filters &amp; eligibility</span></div>
+            <div class="body">
+              <div class="grid2">
+                <div class="f"><span class="fl">Work authorization</span><div class="in"><span class="tag">India<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2.5" stroke-linecap="round"><path d="M7 7l10 10M17 7L7 17"></path></svg></span></div></div>
+                <div class="f"><span class="fl">Salary floor (INR / year)</span><div class="in mono" style="padding: 0 10px; font-size: 12px;">35,00,000</div><span class="help">Leave blank for no floor. 0 would mean something else.</span></div>
+                <div class="f"><span class="fl">Excluded companies</span><div class="in"><span class="tag">Infosys<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2.5" stroke-linecap="round"><path d="M7 7l10 10M17 7L7 17"></path></svg></span><span class="tag">Nagarro<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2.5" stroke-linecap="round"><path d="M7 7l10 10M17 7L7 17"></path></svg></span><span class="ph">Add a company</span></div></div>
+                <div class="f"><span class="fl">Non-negotiables</span><div class="in"><span class="tag">No 24×7 night shifts<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2.5" stroke-linecap="round"><path d="M7 7l10 10M17 7L7 17"></path></svg></span></div></div>
+                <div class="f"><span class="fl">Staleness (days)</span><div class="in mono" style="padding: 0 10px; font-size: 12px; width: 120px;">30</div><span class="help">Postings older than this are ignored.</span></div>
+              </div>
+            </div>
+          </section>
+
+          <section class="card">
+            <div class="ch"><span class="ct">Apply pacing &amp; gate</span></div>
+            <div class="body">
+              <div class="grid2">
+                <div class="f"><span class="fl">Daily application cap</span>
+                  <div style="display: flex; align-items: center; width: 140px; height: 36px; border: 1px solid #cbd5e1; border-radius: 8px; overflow: hidden;"><span style="width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; border-right: 1px solid #e2e8f0; color: #475569;">−</span><span class="mono" style="flex-grow: 1; text-align: center; font-size: 13px;">10</span><span style="width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; border-left: 1px solid #e2e8f0; color: #475569;">+</span></div>
+                  <span class="help">At least 1. The worker stops for the day at this many submissions.</span>
+                </div>
+                <div class="f"><span class="fl">Gate threshold</span>
+                  <div style="display: flex; align-items: center; gap: 14px;">
+                    <div style="flex-grow: 1; position: relative; height: 18px; display: flex; align-items: center;"><div style="width: 100%; height: 6px; border-radius: 9999px; background: #e2e8f0;"><div style="width: 72%; height: 6px; border-radius: 9999px; background: #475569;"></div></div><span style="position: absolute; left: calc(72% - 9px); width: 18px; height: 18px; border-radius: 9999px; background: #ffffff; border: 2px solid #3525cd; box-sizing: border-box; box-shadow: 0 1px 3px rgba(0,0,0,0.15);"></span></div>
+                    <div class="in mono" style="width: 64px; padding: 0 10px; font-size: 12px; justify-content: center;">72</div>
+                  </div>
+                  <span class="help">Weighted score at or above this scores "submit".</span>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section class="card">
+            <div class="ch"><span class="ct">Models &amp; budget</span><span class="help">The chat composer's model picker changes these same two settings.</span></div>
+            <div class="body">
+              <div class="f"><span class="fl">Scoring model</span>
+                <div class="grid2">
+                  <div class="radio radioon"><span class="dotr" style="border: 5px solid #3525cd;"></span><div style="display: flex; flex-direction: column; gap: 2px;"><span style="font-size: 13px; font-weight: 600;">Sonnet — better judgement (default)</span><span class="mono" style="font-size: 11px; color: #64748b;">claude-sonnet-5</span></div></div>
+                  <div class="radio"><span class="dotr"></span><div style="display: flex; flex-direction: column; gap: 2px;"><span style="font-size: 13px; font-weight: 500;">Haiku — faster, lighter on rate limits</span><span class="mono" style="font-size: 11px; color: #64748b;">claude-haiku-4-5</span></div></div>
+                </div>
+                <span class="help">Recorded on every verdict, so past scores stay attributable.</span>
+              </div>
+              <div class="f"><span class="fl">Apply agent model</span>
+                <div class="grid2">
+                  <div class="radio radioon"><span class="dotr" style="border: 5px solid #3525cd;"></span><div style="display: flex; flex-direction: column; gap: 2px;"><span style="font-size: 13px; font-weight: 600;">Sonnet 5 (default)</span><span class="mono" style="font-size: 11px; color: #64748b;">claude-sonnet-5</span></div></div>
+                  <div class="radio"><span class="dotr"></span><div style="display: flex; flex-direction: column; gap: 2px;"><span style="font-size: 13px; font-weight: 500;">Opus 5</span><span class="mono" style="font-size: 11px; color: #64748b;">claude-opus-5</span></div></div>
+                </div>
+                <span class="help">Used for the next Apply or Continue; a running session keeps its model.</span>
+              </div>
+              <div class="f"><span class="fl">Jobs scored per run</span><div class="in mono" style="width: 120px; padding: 0 10px; font-size: 12px;">40</div><span class="help">Caps model calls, not jobs examined. 0 runs discovery and the hard filter only.</span></div>
+            </div>
+          </section>
+
+          <section class="card" style="padding: 14px 16px; display: flex; align-items: center; justify-content: space-between; gap: 16px;">
+            <div style="display: flex; flex-direction: column; gap: 2px;"><span class="ct">Candidate details</span><span style="font-size: 13px; color: #64748b;">Name, contact details, address, work history and education live on Profile.</span></div>
+            <button type="button" class="btn">Open Profile<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#475569" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"></path></svg></button>
+          </section>
+        </div>
+      </div>
+    </main>
+  </div>
+  <div style="position: absolute; left: 240px; right: 0; bottom: 0; height: 64px; box-sizing: border-box; background: #ffffff; border-top: 1px solid #e2e8f0; box-shadow: 0 -4px 16px rgba(15,23,42,0.06); padding: 0 32px; display: flex; align-items: center; justify-content: space-between;">
+    <span style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: #334155;"><span style="width: 8px; height: 8px; border-radius: 9999px; background: #f59e0b;"></span>Unsaved changes</span>
+    <span style="display: flex; gap: 8px;"><button type="button" class="btn">Discard</button><button type="button" class="btn pri">Save settings</button></span>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

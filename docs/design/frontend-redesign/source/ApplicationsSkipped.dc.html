@@ -1,0 +1,142 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;600&amp;display=swap">
+  <style>
+    body { margin: 0; font-family: Inter, system-ui, -apple-system, 'Segoe UI', sans-serif; background: #faf8ff; color: #131b2e; }
+    a { color: #3525cd; text-decoration: none; } a:hover { color: #4f46e5; }
+    .mono { font-family: 'JetBrains Mono', ui-monospace, 'Cascadia Code', monospace; font-variant-numeric: tabular-nums; }
+    .card { background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; box-shadow: 0 1px 2px 0 rgba(0,0,0,0.05); }
+    .b { display: inline-flex; align-items: center; gap: 6px; padding: 2px 8px; border-radius: 4px; font-size: 11px; line-height: 16px; font-weight: 500; white-space: nowrap; border: 1px solid; }
+    .ro { background: #fff1f2; color: #be123c; border-color: #fecdd3; }
+    .sl { background: #f1f5f9; color: #475569; border-color: #e2e8f0; }
+    .btn { height: 28px; padding: 0 10px; border-radius: 8px; border: 1px solid #cbd5e1; background: #ffffff; color: #131b2e; font: 500 12px/16px Inter, system-ui, sans-serif; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; cursor: pointer; }
+    .btn32 { height: 32px; padding: 0 12px; font-size: 13px; line-height: 18px; }
+    .th { padding: 10px 16px; font-size: 11px; line-height: 16px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: #64748b; text-align: left; white-space: nowrap; }
+    .td { padding: 0 16px; height: 40px; font-size: 13px; line-height: 18px; border-bottom: 1px solid #f1f5f9; white-space: nowrap; }
+    .logo { width: 20px; height: 20px; border-radius: 4px; background: #f1f5f9; border: 1px solid #e2e8f0; display: inline-flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; color: #475569; }
+    .src { padding: 2px 6px; border-radius: 4px; background: #f1f5f9; color: #475569; font-size: 11px; }
+    .why { max-width: 360px; overflow: hidden; text-overflow: ellipsis; color: #475569; }
+  </style>
+</helmet>
+<div style="width: 1440px; min-height: 980px; display: flex; background: #faf8ff;">
+  <div style="width: 240px; flex-shrink: 0; background: #ffffff; border-right: 1px solid #e2e8f0;">
+    <dc-import name="Sidebar" active="applications" variant="running" hint-size="240px,900px"></dc-import>
+  </div>
+  <div style="flex-grow: 1; display: flex; flex-direction: column; min-width: 0;">
+    <header style="height: 56px; box-sizing: border-box; background: #ffffff; border-bottom: 1px solid #e2e8f0; padding: 0 32px; display: flex; align-items: center; justify-content: space-between;">
+      <nav style="display: flex; align-items: center; gap: 8px; font-size: 13px; line-height: 18px;">
+        <span style="color: #64748b;">Workspace</span><span class="mono" style="color: #94a3b8;">›</span><span style="font-weight: 500; color: #0f172a;">Applications</span>
+      </nav>
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <div style="display: flex; align-items: center; gap: 2px; padding: 2px; border-radius: 8px; background: #f1f5f9; border: 1px solid #e2e8f0;">
+          <span style="height: 26px; padding: 0 10px; border-radius: 6px; background: #ffffff; box-shadow: 0 1px 2px 0 rgba(0,0,0,0.06); font-size: 12px; font-weight: 500; color: #0f172a; display: flex; align-items: center;">Manual</span>
+          <span style="height: 26px; padding: 0 10px; border-radius: 6px; font-size: 12px; color: #94a3b8; display: flex; align-items: center;">Auto</span>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin: 0 6px 0 2px;"><path d="M6 11h12v9H6zM8.5 11V8a3.5 3.5 0 0 1 7 0v3"></path></svg>
+        </div>
+        <button type="button" class="btn btn32"><svg width="14" height="14" viewBox="0 0 24 24" fill="#475569"><path d="M7 5h4v14H7zM13 5h4v14h-4z"></path></svg>Pause</button>
+        <button type="button" class="btn btn32" style="color: #be123c;"><svg width="14" height="14" viewBox="0 0 24 24" fill="#be123c"><path d="M6 6h12v12H6z"></path></svg>Stop</button>
+      </div>
+    </header>
+
+    <main style="padding: 32px; display: flex; flex-direction: column; gap: 20px; max-width: 1200px; box-sizing: border-box;">
+      <div style="display: flex; flex-direction: column;">
+        <h1 style="margin: 0; font-size: 24px; line-height: 32px; font-weight: 600; letter-spacing: -0.025em;">Applications</h1>
+        <p style="margin: 2px 0 0; font-size: 14px; line-height: 20px; color: #464555;">Roles scored against your career brief</p>
+      </div>
+
+      <section class="card">
+        <div style="padding: 0 16px; border-bottom: 1px solid #e2e8f0; display: flex; gap: 24px; font-size: 13px; line-height: 18px;">
+          <span style="padding: 12px 0; border-bottom: 2px solid transparent; color: #464555; display: flex; align-items: center;">All<span class="mono" style="font-size: 11px; color: #777587; margin-left: 6px;">40</span></span>
+          <span style="padding: 12px 0; border-bottom: 2px solid transparent; color: #464555; display: flex; align-items: center;">Queue<span class="mono" style="font-size: 11px; color: #777587; margin-left: 6px;">15</span></span>
+          <span style="padding: 12px 0; border-bottom: 2px solid #3525cd; color: #3525cd; font-weight: 600; display: flex; align-items: center;">Skipped<span class="mono" style="font-size: 11px; background: #eaedff; color: #3525cd; padding: 0 6px; border-radius: 4px; margin-left: 6px;">31</span></span>
+        </div>
+        <p style="margin: 0; padding: 12px 16px; font-size: 13px; line-height: 18px; color: #475569; border-bottom: 1px solid #f1f5f9;">Applying to a gate skip anyway is recorded as an override — that's how a gate that's too strict gets caught. Hard-filter skips are final.</p>
+
+        <div style="padding: 14px 16px 8px; display: flex; align-items: baseline; gap: 8px;">
+          <span style="font-size: 14px; line-height: 20px; font-weight: 600;">Gate skipped</span>
+          <span class="mono" style="font-size: 12px; color: #94a3b8;">23</span>
+          <span style="font-size: 12px; color: #64748b;">· scored below the threshold</span>
+        </div>
+        <table style="width: 100%; border-collapse: collapse;">
+          <thead>
+            <tr style="background: #f8fafc; border-top: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0;">
+              <th class="th">Company</th><th class="th">Role</th><th class="th">Source</th><th class="th">Score</th><th class="th">Why</th><th class="th" style="text-align: right;">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="td" style="font-weight: 500;"><span style="display: flex; align-items: center; gap: 8px;"><span class="logo">I</span>InMobi</span></td>
+              <td class="td" style="color: #334155;">DevOps Engineer</td>
+              <td class="td"><span class="src">LinkedIn</span></td>
+              <td class="td mono" style="font-weight: 600;">48<span style="font-weight: 400; font-size: 11px; color: #94a3b8;">/100</span></td>
+              <td class="td"><div class="why">Mostly CI/CD tooling; little reliability ownership or on-call scope.</div></td>
+              <td class="td" style="text-align: right;"><button type="button" class="btn">Track anyway</button></td>
+            </tr>
+            <tr>
+              <td class="td" style="font-weight: 500;"><span style="display: flex; align-items: center; gap: 8px;"><span class="logo">C</span>Cred</span></td>
+              <td class="td" style="color: #334155;">SRE Manager</td>
+              <td class="td"><span class="src">LinkedIn</span></td>
+              <td class="td mono" style="font-weight: 600;">52<span style="font-weight: 400; font-size: 11px; color: #94a3b8;">/100</span></td>
+              <td class="td"><div class="why">People-management role; your facts show no direct reports.</div></td>
+              <td class="td" style="text-align: right;"><button type="button" class="btn">Track anyway</button></td>
+            </tr>
+            <tr>
+              <td class="td" style="font-weight: 500; border-bottom: none;"><span style="display: flex; align-items: center; gap: 8px;"><span class="logo">M</span>Meesho</span></td>
+              <td class="td" style="color: #334155; border-bottom: none;">Platform Engineer</td>
+              <td class="td" style="border-bottom: none;"><span class="src">LinkedIn</span></td>
+              <td class="td mono" style="font-weight: 600; border-bottom: none;">49<span style="font-weight: 400; font-size: 11px; color: #94a3b8;">/100</span></td>
+              <td class="td" style="border-bottom: none;"><div class="why">Strong fit but asks for 3 years of Go in production; not in your facts.</div></td>
+              <td class="td" style="text-align: right; border-bottom: none;"><button type="button" class="btn">Track anyway</button></td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div style="padding: 20px 16px 8px; border-top: 1px solid #e2e8f0; display: flex; align-items: baseline; gap: 8px;">
+          <span style="font-size: 14px; line-height: 20px; font-weight: 600;">Hard filter</span>
+          <span class="mono" style="font-size: 12px; color: #94a3b8;">8</span>
+          <span style="font-size: 12px; color: #64748b;">· never scored, no model call</span>
+        </div>
+        <table style="width: 100%; border-collapse: collapse;">
+          <thead>
+            <tr style="background: #f8fafc; border-top: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0;">
+              <th class="th">Company</th><th class="th">Role</th><th class="th">Source</th><th class="th">Score</th><th class="th">Reason</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="td" style="font-weight: 500;"><span style="display: flex; align-items: center; gap: 8px;"><span class="logo">T</span>ThoughtSpot</span></td>
+              <td class="td" style="color: #334155;">Principal SRE</td>
+              <td class="td"><span class="src">Greenhouse</span></td>
+              <td class="td mono" style="color: #94a3b8;">—</td>
+              <td class="td" style="color: #475569;">Seniority above target titles</td>
+            </tr>
+            <tr>
+              <td class="td" style="font-weight: 500;"><span style="display: flex; align-items: center; gap: 8px;"><span class="logo">P</span>PhonePe</span></td>
+              <td class="td" style="color: #334155;">SRE</td>
+              <td class="td"><span class="src">LinkedIn</span></td>
+              <td class="td mono" style="color: #94a3b8;">—</td>
+              <td class="td" style="color: #475569;">Location Pune is not an accepted location</td>
+            </tr>
+            <tr>
+              <td class="td" style="font-weight: 500; border-bottom: none;"><span style="display: flex; align-items: center; gap: 8px;"><span class="logo">N</span>Nagarro</span></td>
+              <td class="td" style="color: #334155; border-bottom: none;">DevOps Lead</td>
+              <td class="td" style="border-bottom: none;"><span class="src">Naukri</span></td>
+              <td class="td mono" style="color: #94a3b8; border-bottom: none;">—</td>
+              <td class="td" style="color: #475569; border-bottom: none;">Excluded company</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+    </main>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

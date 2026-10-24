@@ -1,0 +1,173 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;600&amp;display=swap">
+  <style>
+    body { margin: 0; font-family: Inter, system-ui, -apple-system, 'Segoe UI', sans-serif; background: #f8fafc; color: #0f172a; }
+    a { color: #3525cd; text-decoration: none; } a:hover { color: #4f46e5; }
+    .mono { font-family: 'JetBrains Mono', ui-monospace, 'Cascadia Code', monospace; font-variant-numeric: tabular-nums; }
+    .sec { background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; box-shadow: 0 1px 2px 0 rgba(0,0,0,0.05); padding: 22px 24px; display: flex; flex-direction: column; gap: 18px; }
+    .sh { display: flex; justify-content: space-between; align-items: center; padding-bottom: 12px; border-bottom: 1px solid #f1f5f9; }
+    .st { font-size: 11px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: #64748b; }
+    .sm { font-size: 10px; color: #94a3b8; }
+    .foot { margin-top: auto; padding-top: 12px; border-top: 1px solid #f1f5f9; font-size: 11px; color: #94a3b8; }
+    .cap { font-size: 12px; font-weight: 500; color: #475569; }
+    .pill { display: inline-flex; align-items: center; gap: 6px; padding: 2px 10px; border-radius: 9999px; font-size: 12px; line-height: 18px; font-weight: 500; border: 1px solid; white-space: nowrap; }
+    .em { background: #ecfdf5; color: #047857; border-color: rgba(167,243,208,0.8); }
+    .am { background: #fffbeb; color: #b45309; border-color: rgba(253,230,138,0.8); }
+    .ro { background: #fff1f2; color: #be123c; border-color: rgba(254,205,211,0.8); }
+    .sk { background: #f0f9ff; color: #0369a1; border-color: #bae6fd; }
+    .sl { background: #f1f5f9; color: #475569; border-color: #e2e8f0; }
+    .bt { height: 36px; border-radius: 8px; font: 500 13px/18px Inter, system-ui, sans-serif; display: inline-flex; align-items: center; justify-content: center; gap: 6px; border: 1px solid transparent; cursor: pointer; }
+    .in { height: 36px; box-sizing: border-box; border: 1px solid #cbd5e1; border-radius: 8px; background: #ffffff; padding: 0 12px; font-size: 13px; color: #0f172a; display: flex; align-items: center; justify-content: space-between; }
+    .fl { font-size: 12px; font-weight: 500; color: #334155; }
+    .th { padding: 8px 12px; font-size: 10px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: #64748b; text-align: left; }
+    .td { padding: 0 12px; height: 38px; font-size: 13px; border-bottom: 1px solid #f1f5f9; }
+    .nv { height: 36px; padding: 0 10px; border-radius: 8px; display: flex; align-items: center; justify-content: space-between; font-size: 13px; color: #464555; }
+  </style>
+</helmet>
+<div style="width: 1440px; min-height: 2440px; background: #f8fafc; padding: 36px 40px; box-sizing: border-box; display: flex; flex-direction: column; gap: 28px;">
+  <div style="display: flex; align-items: flex-end; justify-content: space-between; padding-bottom: 22px; border-bottom: 1px solid #e2e8f0;">
+    <div style="display: flex; flex-direction: column; gap: 8px;">
+      <span style="display: flex; align-items: center; gap: 10px;"><span style="width: 28px; height: 28px; border-radius: 6px; background: #4f46e5; display: flex; align-items: center; justify-content: center;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 3L5 13h6l-1 8 8-10h-6l1-8z"></path></svg></span><span class="mono" style="font-size: 11px; font-weight: 600; letter-spacing: 0.05em; color: #3525cd; background: #eef2ff; padding: 2px 8px; border-radius: 4px;">DESIGN SYSTEM SPEC V1.4</span></span>
+      <h1 style="margin: 0; font-size: 26px; line-height: 32px; font-weight: 700; letter-spacing: -0.02em;">Career Agent — Shared Component Sheet</h1>
+      <p style="margin: 0; font-size: 14px; color: #475569;">Foundational tokens, primitives, responsive interactive states, and composite components.</p>
+    </div>
+    <div style="display: flex; gap: 8px;">
+      <span class="mono" style="font-size: 11px; border: 1px solid #e2e8f0; background: #ffffff; padding: 4px 10px; border-radius: 4px; color: #475569;">Canvas: 1440px Desktop</span>
+      <span class="mono" style="font-size: 11px; border: 1px solid #e2e8f0; background: #ffffff; padding: 4px 10px; border-radius: 4px; color: #475569;">Base Font: Inter</span>
+      <span class="mono" style="font-size: 11px; border: 1px solid #e2e8f0; background: #ffffff; padding: 4px 10px; border-radius: 4px; color: #475569;">Mono: JetBrains Mono</span>
+    </div>
+  </div>
+
+  <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 28px; align-items: stretch;">
+
+    <section class="sec">
+      <div class="sh"><span class="st">01. Badges &amp; Chips</span><span class="sm mono">Pills &amp; Metrics</span></div>
+      <div style="display: flex; flex-direction: column; gap: 8px;"><span class="cap">Verdict Pills</span><div style="display: flex; flex-wrap: wrap; gap: 8px;"><span class="pill em">Submit</span><span class="pill am">Hold</span><span class="pill ro">Skip</span></div></div>
+      <div style="display: flex; flex-direction: column; gap: 8px;"><span class="cap">Status Pills</span><div style="display: flex; flex-wrap: wrap; gap: 8px;"><span class="pill sk"><span style="width: 6px; height: 6px; border-radius: 9999px; background: #0ea5e9;"></span>In progress</span><span class="pill sl">Draft</span><span class="pill em">Submitted</span><span class="pill ro">Failed</span><span class="pill am">Waiting on you</span><span class="pill sl">Idle</span></div></div>
+      <div style="display: flex; flex-direction: column; gap: 8px;"><span class="cap">Confidence Indicators</span><div style="display: flex; flex-wrap: wrap; gap: 8px;"><span class="pill" style="background: #ffffff; color: #047857; border-color: #6ee7b7;">High</span><span class="pill" style="background: #ffffff; color: #b45309; border-color: #fcd34d;">Medium</span><span class="pill" style="background: #ffffff; color: #475569; border-color: #cbd5e1;">Low</span></div></div>
+      <div style="display: flex; flex-direction: column; gap: 8px;"><span class="cap">Technical Mono Chips</span><div style="display: flex; flex-wrap: wrap; gap: 8px;"><span class="mono" style="font-size: 12px; padding: 3px 8px; border-radius: 4px; background: #f1f5f9; border: 1px solid #e2e8f0; color: #64748b;">SCORE <b style="color: #0f172a;">82</b> /100</span><span class="mono" style="font-size: 12px; padding: 3px 8px; border-radius: 4px; background: #0f172a; color: #ffffff; display: inline-flex; align-items: center; gap: 6px;"><span style="width: 6px; height: 6px; border-radius: 9999px; background: #34d399;"></span>claude-sonnet-5</span></div></div>
+      <div class="foot mono">Tokens: text-xs · font-medium · h-5 · px-2.5</div>
+    </section>
+
+    <section class="sec">
+      <div class="sh"><span class="st">02. Buttons</span><span class="sm mono">36px (MD) · 32px (SM)</span></div>
+      <div style="display: grid; grid-template-columns: 100px repeat(4, minmax(0, 1fr)); gap: 12px 10px; align-items: center;">
+        <span></span><span class="sm" style="font-weight: 600;">DEFAULT</span><span class="sm" style="font-weight: 600;">HOVER</span><span class="sm" style="font-weight: 600;">DISABLED</span><span class="sm" style="font-weight: 600;">BUSY</span>
+        <span style="font-size: 13px; color: #334155;">Primary</span><span class="bt" style="background: #4f46e5; color: #ffffff;">Save</span><span class="bt" style="background: #3730a3; color: #ffffff;">Hovered</span><span class="bt" style="background: #c7d2fe; color: #ffffff;">Disabled</span><span class="bt" style="background: #4f46e5; color: #ffffff;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="rgba(255,255,255,0.35)" stroke-width="3"></circle><path d="M21 12a9 9 0 0 0-9-9" stroke="#ffffff" stroke-width="3" stroke-linecap="round"></path></svg>Busy</span>
+        <span style="font-size: 13px; color: #334155;">Secondary</span><span class="bt" style="background: #ffffff; border-color: #cbd5e1; color: #0f172a;">Cancel</span><span class="bt" style="background: #f1f5f9; border-color: #cbd5e1; color: #0f172a;">Hovered</span><span class="bt" style="background: #ffffff; border-color: #e2e8f0; color: #cbd5e1;">Disabled</span><span class="bt" style="background: #ffffff; border-color: #cbd5e1; color: #475569;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="#e2e8f0" stroke-width="3"></circle><path d="M21 12a9 9 0 0 0-9-9" stroke="#64748b" stroke-width="3" stroke-linecap="round"></path></svg>Busy</span>
+        <span style="font-size: 13px; color: #334155;">Destructive</span><span class="bt" style="background: #e11d48; color: #ffffff;">Delete</span><span class="bt" style="background: #be123c; color: #ffffff;">Hovered</span><span class="bt" style="background: #fecdd3; color: #ffffff;">Disabled</span><span class="bt" style="background: #e11d48; color: #ffffff;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="rgba(255,255,255,0.35)" stroke-width="3"></circle><path d="M21 12a9 9 0 0 0-9-9" stroke="#ffffff" stroke-width="3" stroke-linecap="round"></path></svg>Busy</span>
+        <span style="font-size: 13px; color: #334155;">Ghost</span><span class="bt" style="color: #334155;">Dismiss</span><span class="bt" style="background: #f1f5f9; color: #0f172a;">Hovered</span><span class="bt" style="color: #cbd5e1;">Disabled</span><span class="bt" style="color: #475569;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="#e2e8f0" stroke-width="3"></circle><path d="M21 12a9 9 0 0 0-9-9" stroke="#64748b" stroke-width="3" stroke-linecap="round"></path></svg>Busy</span>
+      </div>
+      <div style="display: flex; align-items: center; justify-content: space-between; padding-top: 12px; border-top: 1px solid #f1f5f9;">
+        <span style="display: flex; align-items: center; gap: 10px;"><span style="font-size: 13px; color: #334155;">Sizes:</span><span class="bt" style="background: #4f46e5; color: #ffffff; padding: 0 14px;">36px Medium</span><span class="bt" style="height: 32px; background: #4f46e5; color: #ffffff; padding: 0 12px; font-size: 12px;">32px Small</span></span>
+        <span style="display: flex; align-items: center; gap: 8px;"><span style="font-size: 13px; color: #334155;">Icon:</span><span class="bt" style="width: 32px; height: 32px; background: #ffffff; border-color: #cbd5e1;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#475569" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12a8 8 0 1 1-2.3-5.7M20 4v5h-5"></path></svg></span><span class="bt" style="width: 32px; height: 32px; background: #f1f5f9;"><svg width="14" height="14" viewBox="0 0 24 24" fill="#475569"><circle cx="5" cy="12" r="1.6"></circle><circle cx="12" cy="12" r="1.6"></circle><circle cx="19" cy="12" r="1.6"></circle></svg></span></span>
+      </div>
+      <div class="foot mono">Heights: h-9 (36px) · h-8 (32px) · active:scale-[0.98]</div>
+    </section>
+
+    <section class="sec">
+      <div class="sh"><span class="st">03. Inputs &amp; Controls</span><span class="sm mono">Form Elements</span></div>
+      <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 16px;">
+        <div style="display: flex; flex-direction: column; gap: 6px;"><span class="fl">Default Input</span><div class="in">Site Reliability Engineer</div></div>
+        <div style="display: flex; flex-direction: column; gap: 6px;"><span class="fl">Focused (indigo ring)</span><div class="in" style="border-color: #4f46e5; box-shadow: 0 0 0 3px rgba(79,70,229,0.2);">Stripe Payments</div></div>
+        <div style="display: flex; flex-direction: column; gap: 6px;"><span class="fl">With Error</span><div class="in" style="border-color: #fb7185; color: #94a3b8; background: #fffafa;">Enter claim statement</div><span style="font-size: 11px; color: #be123c; display: flex; align-items: center; gap: 4px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#be123c" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 8v4M12 16v.5"></path></svg>Claim is required</span></div>
+        <div style="display: flex; flex-direction: column; gap: 6px;"><span class="fl">Disabled Input</span><div class="in" style="background: #f1f5f9; border-color: #e2e8f0; color: #94a3b8;">candidate@example.com</div></div>
+        <div style="display: flex; flex-direction: column; gap: 6px;"><span class="fl">Select Field</span><div class="in">Bengaluru, India<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"></path></svg></div></div>
+        <div style="display: flex; flex-direction: column; gap: 6px;"><span class="fl" style="display: flex; justify-content: space-between;">Site password<span class="mono" style="font-size: 10px; padding: 0 6px; border-radius: 4px; background: #fffbeb; border: 1px solid #fde68a; color: #b45309;">WRITE-ONLY</span></span><div class="in" style="justify-content: flex-start; gap: 8px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 11h12v9H6zM8.5 11V8a3.5 3.5 0 0 1 7 0v3"></path></svg><span style="letter-spacing: 3px;">•••••••••••••••</span></div></div>
+        <div style="grid-column: span 2; display: flex; flex-direction: column; gap: 6px;"><span class="fl">Textarea</span><div class="in" style="height: 52px; align-items: flex-start; padding-top: 8px; color: #94a3b8;">Evidence: what you shipped and the measurable result</div></div>
+      </div>
+      <div style="display: flex; align-items: center; justify-content: space-between; padding-top: 12px; border-top: 1px solid #f1f5f9;">
+        <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: #334155;"><span style="width: 16px; height: 16px; border-radius: 4px; background: #4f46e5; display: inline-flex; align-items: center; justify-content: center;"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"></path></svg></span>Remember this answer</label>
+        <label style="display: flex; align-items: center; gap: 10px; font-size: 13px; color: #475569;">Show archived<span style="width: 34px; height: 20px; border-radius: 9999px; background: #4f46e5; position: relative;"><span style="position: absolute; right: 2px; top: 2px; width: 16px; height: 16px; border-radius: 9999px; background: #ffffff;"></span></span></label>
+      </div>
+      <div class="foot mono">Borders: border-slate-300 · Focus: ring-indigo-500/20</div>
+    </section>
+
+    <section class="sec">
+      <div class="sh"><span class="st">04. Card + Dense Table</span><span class="sm mono">40px Rows · Hover States</span></div>
+      <div style="display: flex; gap: 20px; font-size: 13px; border-bottom: 1px solid #e2e8f0;">
+        <span style="padding: 8px 0; color: #475569;">All <span class="mono" style="font-size: 11px; color: #94a3b8;">48</span></span>
+        <span style="padding: 8px 0; color: #3525cd; font-weight: 600; border-bottom: 2px solid #3525cd;">Queue <span class="mono" style="font-size: 11px; background: #eaedff; padding: 0 6px; border-radius: 4px;">12</span></span>
+        <span style="padding: 8px 0; color: #475569;">Skipped <span class="mono" style="font-size: 11px; color: #94a3b8;">31</span></span>
+      </div>
+      <table style="width: 100%; border-collapse: collapse; border: 1px solid #e2e8f0; border-radius: 8px;">
+        <thead><tr style="background: #f8fafc;"><th class="th">Company</th><th class="th">Role</th><th class="th">Verdict</th><th class="th" style="text-align: right;">Score</th><th class="th" style="text-align: right;">Actions</th></tr></thead>
+        <tbody>
+          <tr><td class="td" style="font-weight: 500;">Stripe</td><td class="td" style="color: #475569;">Senior SRE</td><td class="td"><span class="pill em" style="font-size: 11px; padding: 0 8px;">Submit</span></td><td class="td mono" style="text-align: right; font-weight: 600;">82</td><td class="td" style="text-align: right; color: #94a3b8;"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.6"></circle><circle cx="12" cy="12" r="1.6"></circle><circle cx="19" cy="12" r="1.6"></circle></svg></td></tr>
+          <tr style="background: #eef2ff;"><td class="td" style="font-weight: 500;">Wise <span class="mono" style="font-size: 9px; color: #64748b; background: #e0e7ff; padding: 1px 4px; border-radius: 3px;">HOVER</span></td><td class="td" style="color: #334155; font-weight: 500;">Backend Engineer</td><td class="td"><span class="pill em" style="font-size: 11px; padding: 0 8px;">Submit</span></td><td class="td mono" style="text-align: right; font-weight: 600;">78</td><td class="td" style="text-align: right; color: #4f46e5;"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.6"></circle><circle cx="12" cy="12" r="1.6"></circle><circle cx="19" cy="12" r="1.6"></circle></svg></td></tr>
+          <tr><td class="td" style="font-weight: 500; border-bottom: none;">Razorpay</td><td class="td" style="color: #475569; border-bottom: none;">Platform Engineer</td><td class="td" style="border-bottom: none;"><span class="pill am" style="font-size: 11px; padding: 0 8px;">Hold</span></td><td class="td mono" style="text-align: right; font-weight: 600; border-bottom: none;">71</td><td class="td" style="text-align: right; color: #94a3b8; border-bottom: none;"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.6"></circle><circle cx="12" cy="12" r="1.6"></circle><circle cx="19" cy="12" r="1.6"></circle></svg></td></tr>
+        </tbody>
+      </table>
+      <div class="foot mono">Table height: 40px fixed rows · 11px uppercase thead</div>
+    </section>
+
+    <section class="sec">
+      <div class="sh"><span class="st">05. Dialog Modal</span><span class="sm mono">480px Spec</span></div>
+      <div style="background: rgba(241,245,249,0.7); border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; display: flex; justify-content: center;">
+        <div style="width: 100%; max-width: 480px; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); padding: 20px; display: flex; flex-direction: column; gap: 16px;">
+          <div style="display: flex; gap: 14px;"><span style="width: 36px; height: 36px; flex-shrink: 0; border-radius: 9999px; background: #fff1f2; border: 1px solid #ffe4e6; display: flex; align-items: center; justify-content: center;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#e11d48" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4M12 16.5v.5M10.3 3.9L2.5 17.5A2 2 0 0 0 4.2 20.5h15.6a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"></path></svg></span><div style="display: flex; flex-direction: column; gap: 4px;"><span style="font-size: 15px; font-weight: 600;">Delete this fact?</span><span style="font-size: 13px; line-height: 19px; color: #64748b;">Resumes citing it would show an unknown fact. This change cannot be undone in this session.</span></div></div>
+          <div style="display: flex; justify-content: flex-end; gap: 8px; padding-top: 12px; border-top: 1px solid #f1f5f9;"><span class="bt" style="height: 32px; padding: 0 12px; color: #334155;">Cancel</span><span class="bt" style="height: 32px; padding: 0 12px; background: #e11d48; color: #ffffff;">Delete</span></div>
+        </div>
+      </div>
+      <div class="foot mono">Modal width: max-w-[480px] · shadow-lg · p-5</div>
+    </section>
+
+    <section class="sec">
+      <div class="sh"><span class="st">06. Notification Toasts</span><span class="sm mono">System Feedback</span></div>
+      <div style="background: #0f172a; border-radius: 8px; padding: 12px 14px; display: flex; align-items: center; gap: 10px; color: #ffffff; font-size: 13px;"><span style="width: 20px; height: 20px; border-radius: 9999px; background: rgba(16,185,129,0.2); display: flex; align-items: center; justify-content: center;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#34d399" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"></path></svg></span><span style="flex-grow: 1;">Settings saved</span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2" stroke-linecap="round"><path d="M7 7l10 10M17 7L7 17"></path></svg></div>
+      <div style="background: #fff1f2; border: 1px solid #fecdd3; border-radius: 8px; padding: 12px 14px; display: flex; align-items: center; gap: 10px; color: #be123c; font-size: 13px;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#be123c" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 8v4M12 16v.5"></path></svg><span style="flex-grow: 1;">Pipeline is already running</span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fb7185" stroke-width="2" stroke-linecap="round"><path d="M7 7l10 10M17 7L7 17"></path></svg></div>
+      <div class="foot mono">Elevation: shadow-md · Dismissible · fixed bottom-right</div>
+    </section>
+
+    <section class="sec">
+      <div class="sh"><span class="st">07. Edge States</span><span class="sm mono">Loading, Empty &amp; Refusal</span></div>
+      <div style="display: flex; flex-direction: column; gap: 8px;"><span class="cap">Loading Skeleton (Shimmer)</span>
+        <div style="border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px; display: flex; flex-direction: column; gap: 10px;">
+          <div style="display: flex; align-items: center; gap: 10px;"><span style="width: 22px; height: 22px; border-radius: 4px; background: #e2e8f0;"></span><span style="width: 120px; height: 10px; border-radius: 9999px; background: #e2e8f0;"></span><span style="flex-grow: 1;"></span><span style="width: 180px; height: 10px; border-radius: 9999px; background: #e2e8f0;"></span><span style="width: 44px; height: 10px; border-radius: 9999px; background: #e2e8f0;"></span></div>
+          <div style="display: flex; align-items: center; gap: 10px;"><span style="width: 22px; height: 22px; border-radius: 4px; background: #e2e8f0;"></span><span style="width: 140px; height: 10px; border-radius: 9999px; background: #e2e8f0;"></span><span style="flex-grow: 1;"></span><span style="width: 160px; height: 10px; border-radius: 9999px; background: #e2e8f0;"></span><span style="width: 44px; height: 10px; border-radius: 9999px; background: #e2e8f0;"></span></div>
+        </div>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 8px;"><span class="cap">Empty State</span>
+        <div style="border: 1px dashed #cbd5e1; border-radius: 8px; padding: 20px; display: flex; flex-direction: column; align-items: center; gap: 6px; text-align: center;">
+          <span style="width: 32px; height: 32px; border-radius: 9999px; background: #f1f5f9; display: flex; align-items: center; justify-content: center;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 13h5l1.5 3h5L16 13h5M5 5h14l2 8v6H3v-6z"></path></svg></span>
+          <span style="font-size: 12px; font-weight: 600; color: #1e293b;">No skipped jobs yet</span>
+          <span style="font-size: 11px; color: #64748b;">Jobs marked as skipped during automated match review appear here.</span>
+          <span class="bt" style="height: 28px; padding: 0 10px; margin-top: 6px; font-size: 12px; background: #ffffff; border-color: #cbd5e1; color: #334155;"><svg width="12" height="12" viewBox="0 0 24 24" fill="#475569"><path d="M8 5v14l11-7z"></path></svg>Run pipeline</span>
+        </div>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 8px;"><span class="cap">Backend Refusal Alert</span>
+        <div style="border-radius: 8px; background: #fff1f2; border: 1px solid rgba(254,205,211,0.8); padding: 12px; display: flex; align-items: flex-start; gap: 10px; font-size: 12px; line-height: 17px; color: #be123c;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#be123c" stroke-width="2" stroke-linecap="round" style="flex-shrink: 0;"><circle cx="12" cy="12" r="9"></circle><path d="M12 8v4M12 16v.5"></path></svg><span><b>Refused:</b> this fact is cited by resume v7 (Stripe SRE)</span></div>
+      </div>
+      <div class="foot mono">Styles: rose-50 bg · rose-700 text · border-dashed</div>
+    </section>
+
+    <section class="sec">
+      <div class="sh"><span class="st">08. Sidebar Nav Item States</span><span class="sm mono">240px Navigation Column</span></div>
+      <div style="width: 240px; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px 8px; display: flex; flex-direction: column; gap: 2px;">
+        <span style="font-size: 10px; font-weight: 600; letter-spacing: 0.05em; color: #777587; padding: 4px 10px 6px;">WORKSPACE NAVIGATION</span>
+        <span class="nv"><span style="display: flex; align-items: center; gap: 10px;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#777587" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-7 9 7M5 10v10h5v-6h4v6h5V10"></path></svg>Home</span><span class="mono" style="font-size: 9px; color: #94a3b8;">DEFAULT</span></span>
+        <span class="nv" style="background: #f1f5f9; color: #131b2e;"><span style="display: flex; align-items: center; gap: 10px;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#475569" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h7v7H4zM13 4h7v4h-7zM13 10h7v10h-7zM4 13h7v7H4z"></path></svg>Dashboard</span><span class="mono" style="font-size: 9px; color: #94a3b8;">HOVER</span></span>
+        <span class="nv" style="background: #eaedff; color: #3525cd; font-weight: 600; position: relative;"><span style="position: absolute; left: 0; top: 6px; bottom: 6px; width: 4px; background: #3525cd; border-radius: 0 4px 4px 0;"></span><span style="display: flex; align-items: center; gap: 10px;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3525cd" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16v12H4zM9 7V5h6v2M4 12h16"></path></svg>Applications</span><span class="mono" style="font-size: 9px; color: #3525cd;">ACTIVE</span></span>
+        <span class="nv"><span style="display: flex; align-items: center; gap: 10px;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#777587" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h8l4 4v14H6zM14 3v4h4M9 12h6M9 16h6"></path></svg>Resumes</span><span class="mono" style="font-size: 11px; background: #e2e7ff; color: #3525cd; padding: 1px 6px; border-radius: 4px;">12</span></span>
+        <span class="nv"><span style="display: flex; align-items: center; gap: 10px;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#777587" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6l1.5 1.5L8 5M4 12l1.5 1.5L8 11M4 18l1.5 1.5L8 17M11 6h9M11 12h9M11 18h9"></path></svg>Facts</span><span style="display: flex; align-items: center; gap: 6px; font-size: 11px; color: #b45309;"><span style="width: 6px; height: 6px; border-radius: 9999px; background: #f59e0b;"></span>Needs review</span></span>
+      </div>
+      <div class="foot mono">Indicators: 2px indigo-600 bar · amber-500 dot · mono badge</div>
+    </section>
+  </div>
+
+  <div style="display: flex; justify-content: space-between; padding-top: 16px; border-top: 1px solid #e2e8f0; font-size: 12px; color: #94a3b8;">
+    <span>Career Agent Component Library · Tailored for quality-gated autonomous workflows</span>
+    <span class="mono">Strict Slate-50 palette · No blur · No gradients</span>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

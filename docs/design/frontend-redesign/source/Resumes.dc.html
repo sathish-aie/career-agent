@@ -1,0 +1,120 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;600&amp;display=swap">
+  <style>
+    body { margin: 0; font-family: Inter, system-ui, -apple-system, 'Segoe UI', sans-serif; background: #faf8ff; color: #131b2e; }
+    a { color: #3525cd; text-decoration: none; } a:hover { color: #4f46e5; }
+    .mono { font-family: 'JetBrains Mono', ui-monospace, 'Cascadia Code', monospace; font-variant-numeric: tabular-nums; }
+    .card { background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; box-shadow: 0 1px 2px 0 rgba(0,0,0,0.05); }
+    .ch { padding: 14px 16px; border-bottom: 1px solid #f1f5f9; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    .ct { font-size: 14px; line-height: 20px; font-weight: 600; color: #131b2e; }
+    .lbl { font-size: 11px; line-height: 16px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: #64748b; }
+    .b { display: inline-flex; align-items: center; gap: 6px; padding: 2px 8px; border-radius: 4px; font-size: 11px; line-height: 16px; font-weight: 500; white-space: nowrap; border: 1px solid; }
+    .em { background: #ecfdf5; color: #047857; border-color: #a7f3d0; }
+    .btn { height: 32px; padding: 0 12px; border-radius: 8px; border: 1px solid #cbd5e1; background: #ffffff; color: #131b2e; font: 500 13px/18px Inter, system-ui, sans-serif; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; cursor: pointer; }
+    .fact { display: inline-flex; align-items: center; gap: 4px; padding: 1px 6px; border-radius: 4px; background: #f8fafc; border: 1px solid #e2e8f0; font-size: 11px; line-height: 16px; color: #475569; }
+    .row { display: grid; grid-template-columns: 24px minmax(0, 1.4fr) 200px 110px 70px 90px 90px; align-items: center; gap: 12px; padding: 0 16px; height: 44px; border-bottom: 1px solid #f1f5f9; font-size: 13px; }
+  </style>
+</helmet>
+<div style="width: 1440px; min-height: 1100px; display: flex; background: #faf8ff;">
+  <div style="width: 240px; flex-shrink: 0; background: #ffffff; border-right: 1px solid #e2e8f0;">
+    <dc-import name="Sidebar" active="resumes" variant="running" hint-size="240px,900px"></dc-import>
+  </div>
+  <div style="flex-grow: 1; display: flex; flex-direction: column; min-width: 0;">
+    <header style="height: 56px; box-sizing: border-box; background: #ffffff; border-bottom: 1px solid #e2e8f0; padding: 0 32px; display: flex; align-items: center; justify-content: space-between;">
+      <nav style="display: flex; align-items: center; gap: 8px; font-size: 13px; line-height: 18px;"><span style="color: #64748b;">Candidate</span><span class="mono" style="color: #94a3b8;">›</span><span style="font-weight: 500; color: #0f172a;">Resumes</span></nav>
+      <button type="button" class="btn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#475569" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V5M7 10l5-5 5 5M5 20h14"></path></svg>Replace master</button>
+    </header>
+
+    <main style="padding: 32px; display: flex; flex-direction: column; gap: 20px; max-width: 1200px; box-sizing: border-box;">
+      <div style="display: flex; flex-direction: column;">
+        <h1 style="margin: 0; font-size: 24px; line-height: 32px; font-weight: 600; letter-spacing: -0.025em;">Resumes</h1>
+        <p style="margin: 2px 0 0; font-size: 14px; line-height: 20px; color: #464555;">The master template every tailored resume is rendered from.</p>
+      </div>
+
+      <section class="card">
+        <div style="padding: 16px; display: flex; align-items: center; gap: 16px;">
+          <div style="width: 44px; height: 52px; border-radius: 6px; background: #f8fafc; border: 1px solid #e2e8f0; display: flex; align-items: center; justify-content: center;"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h8l4 4v14H6zM14 3v4h4M9 12h6M9 16h6"></path></svg></div>
+          <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 4px;">
+            <span style="display: flex; align-items: center; gap: 10px;"><span class="ct">Master resume</span><span class="b em">Ready for tailoring</span></span>
+            <span style="font-size: 13px; color: #64748b;"><span class="mono" style="font-size: 12px; color: #334155;">resume/master.docx</span> · modified <span class="mono" style="font-size: 12px;">2026-09-14 15:22</span></span>
+          </div>
+        </div>
+        <div style="margin: 0 16px 16px; border-radius: 8px; background: #ecfdf5; border: 1px solid #a7f3d0; padding: 12px 14px; display: flex; flex-direction: column; gap: 8px;">
+          <span style="display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: #065f46;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#047857" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"></path></svg>Master resume installed</span>
+          <span style="font-size: 12px; font-weight: 600; color: #065f46;">What we changed in your file</span>
+          <ul style="margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 4px; font-size: 12px; line-height: 17px; color: #065f46;">
+            <li><span class="mono">summary paragraph ("Site reliability engineer with 8 years…") replaced with &lt;&lt;SUMMARY&gt;&gt;</span></li>
+            <li><span class="mono">5 bullet(s) replaced with one &lt;&lt;PROJECT_BULLET&gt;&gt; marker, cloned per tailored bullet</span></li>
+          </ul>
+          <span style="font-size: 12px; color: #047857;">Replacing the master affects future tailoring only — existing versions keep the file they were rendered from.</span>
+        </div>
+        <div style="padding: 10px 16px; border-top: 1px solid #f1f5f9; display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 500; color: #475569;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"></path></svg>How the template works</div>
+      </section>
+
+      <section class="card">
+        <div class="ch">
+          <span style="display: flex; align-items: baseline; gap: 8px;"><span class="ct">Tailored versions</span><span class="mono" style="font-size: 12px; color: #94a3b8;">4</span><span style="font-size: 12px; color: #64748b;">· one per job, reused on Redo draft and Continue</span></span>
+          <div style="height: 32px; width: 240px; box-sizing: border-box; border: 1px solid #cbd5e1; border-radius: 8px; padding: 0 10px; display: flex; align-items: center; gap: 8px; font-size: 13px; color: #94a3b8;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="6"></circle><path d="M20 20l-4.5-4.5"></path></svg>Filter by company or role</div>
+        </div>
+        <div class="row" style="background: #f8fafc; height: 36px; border-bottom: 1px solid #e2e8f0;">
+          <span></span><span class="lbl">Job</span><span class="lbl">Version</span><span class="lbl">Generated</span><span class="lbl">Bullets</span><span class="lbl">Prompt</span><span></span>
+        </div>
+        <div class="row" style="background: #fbfbfe; border-bottom: none;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#475569" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"></path></svg>
+          <a href="#" style="font-weight: 500;">Stripe · Senior Site Reliability Engineer</a>
+          <span class="mono" style="font-size: 12px;">tailored-stripe-v1</span>
+          <span class="mono" style="font-size: 12px; color: #64748b;">2026-09-14</span>
+          <span class="mono" style="font-size: 12px;">3</span>
+          <span class="mono" style="font-size: 12px; color: #64748b;">tailor-v2</span>
+          <a href="#" style="font-weight: 500; text-align: right;">Download</a>
+        </div>
+        <div style="background: #fbfbfe; padding: 4px 16px 18px 52px; border-bottom: 1px solid #e2e8f0; display: flex; flex-direction: column; gap: 12px;">
+          <p style="margin: 0; font-size: 13px; line-height: 20px; color: #334155; max-width: 760px;">Site reliability engineer who runs payments infrastructure at scale — multi-region Kubernetes, SLO-driven on-call and latency work that shows up in checkout conversion.</p>
+          <div style="display: flex; flex-direction: column; gap: 10px;">
+            <div style="display: flex; flex-direction: column; gap: 4px;"><span style="font-size: 13px; line-height: 19px;">• Cut p95 checkout latency 40% by moving session state from Postgres to Redis.</span><span style="display: flex; gap: 6px; padding-left: 10px;"><a href="#" class="fact"><span class="mono">#12</span>Cut p95 checkout latency 40%</a></span></div>
+            <div style="display: flex; flex-direction: column; gap: 4px;"><span style="font-size: 13px; line-height: 19px;">• Halved mean time to recovery across 14 services with runbooks and a paging rotation.</span><span style="display: flex; gap: 6px; padding-left: 10px;"><a href="#" class="fact"><span class="mono">#4</span>MTTR 52 → 24 min</a><a href="#" class="fact"><span class="mono">#7</span>Built on-call rotation</a></span></div>
+            <div style="display: flex; flex-direction: column; gap: 4px;"><span style="font-size: 13px; line-height: 19px;">• Led the zero-downtime migration of card tokenisation to a new region.</span><span style="display: flex; gap: 6px; padding-left: 10px;"><span class="fact" style="background: #fff1f2; border-color: #fecdd3; color: #be123c;"><span class="mono">#9</span>Unknown fact</span></span></div>
+          </div>
+        </div>
+        <div class="row">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"></path></svg>
+          <a href="#" style="font-weight: 500;">Freshworks · DevOps Lead</a>
+          <span class="mono" style="font-size: 12px;">tailored-freshworks-v1</span>
+          <span class="mono" style="font-size: 12px; color: #64748b;">2026-09-10</span>
+          <span class="mono" style="font-size: 12px;">3</span>
+          <span class="mono" style="font-size: 12px; color: #64748b;">tailor-v2</span>
+          <a href="#" style="font-weight: 500; text-align: right;">Download</a>
+        </div>
+        <div class="row">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"></path></svg>
+          <a href="#" style="font-weight: 500;">Wise · Backend Engineer (Core Banking)</a>
+          <span class="mono" style="font-size: 12px;">tailored-wise-v1</span>
+          <span class="mono" style="font-size: 12px; color: #64748b;">2026-09-08</span>
+          <span class="mono" style="font-size: 12px;">4</span>
+          <span class="mono" style="font-size: 12px; color: #64748b;">tailor-v1</span>
+          <a href="#" style="font-weight: 500; text-align: right;">Download</a>
+        </div>
+        <div class="row" style="border-bottom: none;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"></path></svg>
+          <a href="#" style="font-weight: 500;">Razorpay · Platform Engineer (Infra)</a>
+          <span class="mono" style="font-size: 12px;">tailored-razorpay-v1</span>
+          <span class="mono" style="font-size: 12px; color: #64748b;">2026-09-06</span>
+          <span class="mono" style="font-size: 12px;">3</span>
+          <span class="mono" style="font-size: 12px; color: #64748b;">tailor-v1</span>
+          <a href="#" style="font-weight: 500; text-align: right;">Download</a>
+        </div>
+      </section>
+    </main>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>
