@@ -1,0 +1,5 @@
+#!/bin/sh
+# chrome.py launches whatever CHROME_PATH names, with its own flags. Chrome's
+# sandbox needs user namespaces, which Docker's default seccomp profile blocks,
+# so without --no-sandbox it exits at once. /dev/shm is 64 MB in a container.
+exec chromium --no-sandbox --disable-dev-shm-usage --disable-gpu "$@"

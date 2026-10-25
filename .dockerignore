@@ -1,0 +1,23 @@
+# Secrets and personal data: never baked into an image
+backend/.env
+backend/.env.*
+backend/candidate_profile.toml
+backend/resume
+backend/data
+data
+
+# Not needed to build or run
+.git
+.claude
+.superpowers
+.pytest_cache
+graphify-out
+docs
+components.png
+backend/tests
+backend/scripts
+**/node_modules
+**/.venv
+**/__pycache__
+**/.pytest_cache
+frontend/dist

@@ -88,6 +88,30 @@ Every submission carries an explainable decision record: why it qualified, what 
 The backend (Python package, config, data) lives in `backend/`; the dashboard's frontend
 is a separate app in `frontend/`. Run each from its own directory, in two terminals.
 
+### With Docker (one command)
+
+Needs only Docker. Put your tokens in `backend/.env` (copy `backend/.env.example`), then from the repo root:
+
+```bash
+docker compose up --build
+```
+
+Open [http://localhost:8080](http://localhost:8080). That one container runs the frontend, the
+backend and the Chrome the apply agent drives; there is nothing else to start or install.
+Your database, brief, profile, resumes and the agent's signed-in Chrome profile live in the
+`state` volume, so they survive restarts (`docker compose down -v` deletes them).
+
+- **Profile and master resume:** fill the Profile page and upload the master resume on the
+  Resumes page, or mount your existing files (see the commented lines in `docker-compose.yml`).
+- **Signing in:** when the agent pauses for a sign-in, the browser it is driving is at
+  [http://localhost:6080/vnc.html](http://localhost:6080/vnc.html). Sign in there, then click
+  **I've signed in** in the app.
+- **`CREDENTIAL_KEY`:** if you don't set one, the container generates it into the volume.
+- **Without compose:** `docker build -t career-agent .` then `docker run --init --hostname career-agent -p 127.0.0.1:8080:8080 -p 127.0.0.1:6080:6080 --env-file backend/.env -v career-agent-state:/state career-agent`.
+
+Both ports are published to this machine only: the app has no login. Chrome runs with
+`--no-sandbox` in the container (Docker's default profile blocks the sandbox).
+
 ### Starting the app (day-to-day)
 
 Once the one-time setup below has been done, this is all firing it up takes — two terminals, both left running:

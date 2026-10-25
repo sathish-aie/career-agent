@@ -1,0 +1,25 @@
+# docker compose up --build        (add -d to run in the background)
+# then open http://localhost:8080
+services:
+  career-agent:
+    build: .
+    image: career-agent
+    init: true                 # Chrome spawns many children; reap them
+    hostname: career-agent     # Chrome ties its profile lock to the hostname
+    restart: unless-stopped
+    ports:
+      # The app has no login and holds your PII, so it is published to this
+      # machine only. Drop "127.0.0.1:" to reach it from the network.
+      - "127.0.0.1:8080:8080"  # the app
+      - "127.0.0.1:6080:6080"  # the agent's browser: http://localhost:6080/vnc.html
+    env_file:
+      - path: backend/.env     # CLAUDE_CODE_OAUTH_TOKEN, APIFY_TOKEN, CREDENTIAL_KEY
+        required: false
+    volumes:
+      - state:/state           # database, brief, profile, resumes, Chrome profile
+      # To start from files you already have instead of the Profile / Resumes pages:
+      # - ./backend/candidate_profile.toml:/state/candidate_profile.toml
+      # - ./backend/resume:/state/resume
+
+volumes:
+  state:
